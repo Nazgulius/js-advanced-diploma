@@ -1,3 +1,5 @@
+import GamePlay from './GamePlay.js';
+
 export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
@@ -7,6 +9,13 @@ export default class GameController {
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
+    const img = document.getElementById('game-container');
+    //img.addEventListener('load', () => {
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('work');
+      gamePlay.drawUi('prairie');
+    })
+
   }
 
   onCellClick(index) {
