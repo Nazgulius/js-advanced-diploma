@@ -1,4 +1,4 @@
-import GamePlay from './GamePlay.js';
+import themes from './themes.js';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -9,11 +9,17 @@ export default class GameController {
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
-    const img = document.getElementById('game-container');
-    //img.addEventListener('load', () => {
+    // const img = document.getElementById('game-container');
+    
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('work');
-      gamePlay.drawUi('prairie');
+      this.gamePlay.drawUi(themes.prairie);
+
+      // нужно найти зависимость от ЛВЛ для смены карт
+      if(false) { 
+        for (const item in themes) {          
+          console.log(themes[item]);
+        }
+      }
     })
 
   }
