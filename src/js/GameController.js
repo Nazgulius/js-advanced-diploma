@@ -23,44 +23,63 @@ export default class GameController {
           console.log(themes[item]);
         }
       }
-      const character = new Bowman(1);
-      const position = 0; 
-      const character2 = new Bowman(1);
-      const position2 = 8; 
-      const positionedCharacter = new PositionedCharacter(character, position);
-      const positionedCharacter2 = new PositionedCharacter(character2, position2);
-      console.log(positionedCharacter);
-      console.log(positionedCharacter2);
-      let mass = [];
-      mass.push(positionedCharacter);
-      mass.push(positionedCharacter2);
-      new GamePlay().redrawPositions([positionedCharacter]);
-    });
-    
 
+      const boardSize = this.gamePlay.boardSize;
 
-    console.log('Position player');
-    const boardSize = 8; 
-    let randomOff = [];
+      let randomOff = [];
 
-    // Создает массив для левых двух столбцов  
-    const randomPositionPlayer = [];
-    for (let row = 0; row < boardSize; row++) {
-      randomPositionPlayer.push(row * boardSize);
-      randomPositionPlayer.push(row * boardSize + 1);
-    }
-
-    // Используем цикл для выбора случайных позиций  
-    while (randomOff.length < 3) { // Указать, сколько позиций выбрать  
-      const p = Math.floor(Math.random() * randomPositionPlayer.length);
-
-      // Проверяем на дубликаты  
-      if (!randomOff.includes(randomPositionPlayer[p])) {
-        console.log(randomPositionPlayer[p]); // заменить на добавление персонажа
-        randomOff.push(randomPositionPlayer[p]);
+      // Создает массив для левых двух столбцов  
+      const randomPositionPlayer = [];
+      for (let row = 0; row < boardSize; row++) {
+        randomPositionPlayer.push(row * boardSize);
+        randomPositionPlayer.push(row * boardSize + 1);
       }
-    }
-    
+
+      // Используем цикл для выбора случайных позиций  
+      while (randomOff.length < 3) { // Указать, сколько позиций выбрать  
+        const p = Math.floor(Math.random() * randomPositionPlayer.length);
+
+        // Проверяем на дубликаты  
+        if (!randomOff.includes(randomPositionPlayer[p])) {
+          // console.log(randomPositionPlayer[p]); // заменить на добавление персонажа
+
+          // massUnits.push(randomPositionPlayer[p]);
+          randomOff.push(randomPositionPlayer[p]);
+        }
+      }
+
+
+      let massUnits = [];
+
+      randomOff.forEach((unit) => {
+        massUnits.push(new PositionedCharacter(new Bowman(1), unit));
+      })
+      this.gamePlay.redrawPositions(massUnits);
+
+      // рандомим команду противника
+      let randomOffRight = [];
+
+      // Создаем массив для правых двух столбцов  
+      const randomPositionPlayerRight = [];
+      for (let row = 0; row < size; row++) {
+        randomPositionPlayerRight.push(row * size + (size - 2)); // Предпоследний столбец  
+        randomPositionPlayerRight.push(row * size + (size - 1)); // Последний столбец  
+      }
+
+      // Используем цикл для выбора случайных позиций  
+      while (randomOffRight.length < 8) { // Укажите, сколько позиций вы хотите выбрать  
+        const p = Math.floor(Math.random() * randomPositionPlayerRight.length);
+
+        // Проверяем на дубликаты  
+        if (!randomOffRight.includes(randomPositionPlayerRight[p])) {
+          console.log(randomPositionPlayerRight[p]);
+          randomOffRight.push(randomPositionPlayerRight[p]);
+        }
+      }
+
+    });
+
+
 
   }
 
