@@ -14,12 +14,15 @@
  */
 export default class Character {
   constructor(level, type = 'generic') {
+    if (new.target === Character) {
+      throw new Error("A Character cannot be summoned with 'new Character()'!");
+    }
+
     this.level = level;
     this.attack = 0;
     this.defence = 0;
     this.health = 50;
     this.type = type;
     // TODO: выбросите исключение, если кто-то использует "new Character()"
-    //if (new.target) throw new Error("A Сharacter cannot be summoned with a new!"); 
   }
 }

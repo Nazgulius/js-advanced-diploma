@@ -1,8 +1,12 @@
 import themes from './themes.js';
-import GamePlay from './GamePlay.js';
 import PositionedCharacter from './PositionedCharacter.js';
 import Bowman from './characters/Bowman.js';
+import Daemon from './characters/Daemon.js';
+import Magician from './characters/Magician.js';
+import Swordsman from './characters/Swordsman.js';
+import Undead from './characters/Undead.js';
 import Vampire from './characters/Vampire.js';
+import { characterGenerator, generateTeam } from './generators.js';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -25,18 +29,41 @@ export default class GameController {
         }
       }
 
+      /*
+      const playerGenerator = characterGenerator([Bowman, Swordsman, Magician], 2); // тип и макс уровень
+      const cmpGenerator = characterGenerator([Daemon, Undead, Vampire], 2); // тип и макс уровень
+
       let massUnits = [];
       // рандомим команду игрока и указываем количество юнитов
-      randomPositionPlayerLeft(this.gamePlay.boardSize, 3).forEach((unit) => {
-        massUnits.push(new PositionedCharacter(new Bowman(1), unit));
+      randomPositionPlayerLeft(this.gamePlay.boardSize, 3).forEach((point) => {
+        massUnits.push(new PositionedCharacter(playerGenerator.next().value, point));
       });
-       // рандомим команду противника и указываем количество юнитов
-      randomPositionPlayerRight(this.gamePlay.boardSize, 3).forEach((unit) => {
-        massUnits.push(new PositionedCharacter(new Vampire(1), unit));
+      // рандомим команду противника и указываем количество юнитов
+      randomPositionPlayerRight(this.gamePlay.boardSize, 3).forEach((point) => {
+        massUnits.push(new PositionedCharacter(cmpGenerator.next().value, point));
+        
+        //this.gamePlay.redrawPositions(massUnits);
+      });*/
+
+      
+      // генерация команды
+      const team2 = generateTeam([Bowman, Swordsman, Magician], 3, 4); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
+      const team3 = generateTeam([Daemon, Undead, Vampire], 3, 4); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
+      let massUnits2 = [];
+
+      // геренируем команду игрока
+      const randomPointsLeft = randomPositionPlayerLeft(this.gamePlay.boardSize, 3); 
+      randomPointsLeft.forEach((point, index) => {
+          massUnits2.push(new PositionedCharacter(team2.getCharacters()[index], point));
       });
 
-      this.gamePlay.redrawPositions(massUnits);
-
+      // геренируем команду противника
+      const randomPointsRight = randomPositionPlayerRight(this.gamePlay.boardSize, 3); 
+      randomPointsRight.forEach((point, index) => {
+          massUnits2.push(new PositionedCharacter(team3.getCharacters()[index], point));
+      });
+      
+      this.gamePlay.redrawPositions(massUnits2); // выводим на поле
 
     });
 
@@ -70,12 +97,12 @@ export default class GameController {
       const randomPositionPlayerRight = []; // массив правых двух столбцов 
 
       for (let row = 0; row < boardSize; row++) {
-        randomPositionPlayerRight.push(row * boardSize + (boardSize - 2)); 
-        randomPositionPlayerRight.push(row * boardSize + (boardSize - 1)); 
+        randomPositionPlayerRight.push(row * boardSize + (boardSize - 2));
+        randomPositionPlayerRight.push(row * boardSize + (boardSize - 1));
       }
 
       // Используем цикл для выбора случайных позиций  
-      while (randomUnitsRight.length < countUnits) { 
+      while (randomUnitsRight.length < countUnits) {
         const p = Math.floor(Math.random() * randomPositionPlayerRight.length);
 
         // добавляем случайные позиции
@@ -83,7 +110,7 @@ export default class GameController {
           randomUnitsRight.push(randomPositionPlayerRight[p]);
         }
       }
-      
+
       return randomUnitsRight;
     }
   }
