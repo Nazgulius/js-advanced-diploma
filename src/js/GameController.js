@@ -45,20 +45,21 @@ export default class GameController {
         //this.gamePlay.redrawPositions(massUnits);
       });*/
 
-      
+      const countTeamPlayer = 3;
+      const countTeamCmp = 3;
       // генерация команды
-      const team2 = generateTeam([Bowman, Swordsman, Magician], 3, 4); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
-      const team3 = generateTeam([Daemon, Undead, Vampire], 3, 4); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
+      const team2 = generateTeam([Bowman, Swordsman, Magician], 3, countTeamPlayer); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
+      const team3 = generateTeam([Daemon, Undead, Vampire], 3, countTeamCmp); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
       let massUnits2 = [];
 
       // геренируем команду игрока
-      const randomPointsLeft = randomPositionPlayerLeft(this.gamePlay.boardSize, 3); 
+      const randomPointsLeft = randomPositionPlayerLeft(this.gamePlay.boardSize, countTeamPlayer); 
       randomPointsLeft.forEach((point, index) => {
           massUnits2.push(new PositionedCharacter(team2.getCharacters()[index], point));
       });
 
       // геренируем команду противника
-      const randomPointsRight = randomPositionPlayerRight(this.gamePlay.boardSize, 3); 
+      const randomPointsRight = randomPositionPlayerRight(this.gamePlay.boardSize, countTeamCmp); 
       randomPointsRight.forEach((point, index) => {
           massUnits2.push(new PositionedCharacter(team3.getCharacters()[index], point));
       });
