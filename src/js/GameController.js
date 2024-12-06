@@ -2,6 +2,7 @@ import themes from './themes.js';
 import GamePlay from './GamePlay.js';
 import PositionedCharacter from './PositionedCharacter.js';
 import Bowman from './characters/Bowman.js';
+import Vampire from './characters/Vampire.js';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -24,63 +25,67 @@ export default class GameController {
         }
       }
 
-      const boardSize = this.gamePlay.boardSize;
-
-      let randomOff = [];
-
-      // Создает массив для левых двух столбцов  
-      const randomPositionPlayer = [];
-      for (let row = 0; row < boardSize; row++) {
-        randomPositionPlayer.push(row * boardSize);
-        randomPositionPlayer.push(row * boardSize + 1);
-      }
-
-      // Используем цикл для выбора случайных позиций  
-      while (randomOff.length < 3) { // Указать, сколько позиций выбрать  
-        const p = Math.floor(Math.random() * randomPositionPlayer.length);
-
-        // Проверяем на дубликаты  
-        if (!randomOff.includes(randomPositionPlayer[p])) {
-          // console.log(randomPositionPlayer[p]); // заменить на добавление персонажа
-
-          // massUnits.push(randomPositionPlayer[p]);
-          randomOff.push(randomPositionPlayer[p]);
-        }
-      }
-
-
       let massUnits = [];
-
-      randomOff.forEach((unit) => {
+      // рандомим команду игрока и указываем количество юнитов
+      randomPositionPlayerLeft(this.gamePlay.boardSize, 3).forEach((unit) => {
         massUnits.push(new PositionedCharacter(new Bowman(1), unit));
-      })
+      });
+       // рандомим команду противника и указываем количество юнитов
+      randomPositionPlayerRight(this.gamePlay.boardSize, 3).forEach((unit) => {
+        massUnits.push(new PositionedCharacter(new Vampire(1), unit));
+      });
+
       this.gamePlay.redrawPositions(massUnits);
 
-      // рандомим команду противника
-      let randomOffRight = [];
-
-      // Создаем массив для правых двух столбцов  
-      const randomPositionPlayerRight = [];
-      for (let row = 0; row < size; row++) {
-        randomPositionPlayerRight.push(row * size + (size - 2)); // Предпоследний столбец  
-        randomPositionPlayerRight.push(row * size + (size - 1)); // Последний столбец  
-      }
-
-      // Используем цикл для выбора случайных позиций  
-      while (randomOffRight.length < 8) { // Укажите, сколько позиций вы хотите выбрать  
-        const p = Math.floor(Math.random() * randomPositionPlayerRight.length);
-
-        // Проверяем на дубликаты  
-        if (!randomOffRight.includes(randomPositionPlayerRight[p])) {
-          console.log(randomPositionPlayerRight[p]);
-          randomOffRight.push(randomPositionPlayerRight[p]);
-        }
-      }
 
     });
 
 
+    // рандомим команду игрока
+    function randomPositionPlayerLeft(boardSize, countUnits) {
+      let randomUnitsLeft = []; // массив для рандомных юнитов
+      const randomPositionPlayerLeft = []; // массив левых двух столбцов 
 
+      for (let row = 0; row < boardSize; row++) {
+        randomPositionPlayerLeft.push(row * boardSize);
+        randomPositionPlayerLeft.push(row * boardSize + 1);
+      }
+
+      // Используем цикл для выбора случайных позиций  
+      while (randomUnitsLeft.length < countUnits) {
+        const p = Math.floor(Math.random() * randomPositionPlayerLeft.length);
+
+        // добавляем случайные позиции
+        if (!randomUnitsLeft.includes(randomPositionPlayerLeft[p])) {
+          randomUnitsLeft.push(randomPositionPlayerLeft[p]);
+        }
+      }
+
+      return randomUnitsLeft;
+    }
+
+    // рандомим команду противника
+    function randomPositionPlayerRight(boardSize, countUnits) {
+      let randomUnitsRight = []; // массив для рандомных юнитов
+      const randomPositionPlayerRight = []; // массив правых двух столбцов 
+
+      for (let row = 0; row < boardSize; row++) {
+        randomPositionPlayerRight.push(row * boardSize + (boardSize - 2)); 
+        randomPositionPlayerRight.push(row * boardSize + (boardSize - 1)); 
+      }
+
+      // Используем цикл для выбора случайных позиций  
+      while (randomUnitsRight.length < countUnits) { 
+        const p = Math.floor(Math.random() * randomPositionPlayerRight.length);
+
+        // добавляем случайные позиции
+        if (!randomUnitsRight.includes(randomPositionPlayerRight[p])) {
+          randomUnitsRight.push(randomPositionPlayerRight[p]);
+        }
+      }
+      
+      return randomUnitsRight;
+    }
   }
 
   onCellClick(index) {
