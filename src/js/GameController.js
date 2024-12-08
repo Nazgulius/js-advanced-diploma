@@ -7,6 +7,7 @@ import Swordsman from './characters/Swordsman.js';
 import Undead from './characters/Undead.js';
 import Vampire from './characters/Vampire.js';
 import { characterGenerator, generateTeam } from './generators.js';
+import Character from './Character.js';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -68,6 +69,16 @@ export default class GameController {
 
     });
 
+    document.addEventListener('mouseover', (event) => {
+      // this.someMethodName();  
+      const characterElement = event.target.closest('.character'); 
+      if (characterElement) {  
+        console.log('выпод подсказки + characterElement: ' + characterElement);
+        //const index = this.getIndex(characterElement); // Предполагается, что есть метод, который определяет индекс элемента  
+       // const index = this.getCharacterData(characterElement); // Предполагается, что есть метод, который определяет индекс элемента  
+        this.onCellEnter(index);  
+      } 
+    });
 
     // рандомим команду игрока
     function randomPositionPlayerLeft(boardSize, countUnits) {
@@ -114,7 +125,14 @@ export default class GameController {
 
       return randomUnitsRight;
     }
+
+    
   }
+
+  someMethodName() { // <- что это за метод и где это нужно сделать решите сами
+    this.gameplay.addCellEnterListener(this.onCellEnter);   
+  }
+
 
   onCellClick(index) {
     // TODO: react to click
@@ -123,9 +141,28 @@ export default class GameController {
 
   onCellEnter(index) {
     // TODO: react to mouse enter
+    console.log('index это: ' + index);
+    // const character = this.getCharacterData(index);  
+    //const character = this.getCharacterData();  
+    // this.gamePlay.showCellTooltip(`U+1F396 1 U+2694 U+1F6E1 U+2764`, index);
+    //this.gamePlay.showCellTooltip('всплывающая подсказка', index);
+
+    const character = this.gameplay.cells[index];  
+    if (character) {  
+      // Используем метод для получения информации о персонаже  
+      const tooltipMessage = this.formatCharacterInfo(character);  
+      // Отображаем подсказку  
+      this.gameplay.showCellTooltip(tooltipMessage, index);  
+    } 
   }
 
   onCellLeave(index) {
     // TODO: react to mouse leave
+    this.gamePlay.hideCellTooltip();
   }
+
+  // Метод форматирования информации о персонаже  
+  formatCharacterInfo({ level, attack, defense, health }) {  
+    return `🎖${level} ⚔${attack} 🛡${defense} ❤${health}`;  
+  } 
 }
