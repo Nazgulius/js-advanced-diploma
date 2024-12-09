@@ -9,10 +9,12 @@ import Vampire from './characters/Vampire.js';
 import { characterGenerator, generateTeam } from './generators.js';
 import Character from './Character.js';
 
+
 export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
+    this.massUnits = [];
   }
 
   init() {
@@ -51,86 +53,78 @@ export default class GameController {
       // генерация команды
       const team2 = generateTeam([Bowman, Swordsman, Magician], 3, countTeamPlayer); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
       const team3 = generateTeam([Daemon, Undead, Vampire], 3, countTeamCmp); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
-      let massUnits2 = [];
+      let massUnits = [];
 
       // геренируем команду игрока
-      const randomPointsLeft = randomPositionPlayerLeft(this.gamePlay.boardSize, countTeamPlayer); 
+      const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, countTeamPlayer);
       randomPointsLeft.forEach((point, index) => {
-          massUnits2.push(new PositionedCharacter(team2.getCharacters()[index], point));
+        this.massUnits.push(new PositionedCharacter(team2.getCharacters()[index], point));
       });
 
       // геренируем команду противника
-      const randomPointsRight = randomPositionPlayerRight(this.gamePlay.boardSize, countTeamCmp); 
+      const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, countTeamCmp);
       randomPointsRight.forEach((point, index) => {
-          massUnits2.push(new PositionedCharacter(team3.getCharacters()[index], point));
+        this.massUnits.push(new PositionedCharacter(team3.getCharacters()[index], point));
       });
-      
-      this.gamePlay.redrawPositions(massUnits2); // выводим на поле
+
+      this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
 
     });
 
-    document.addEventListener('mouseover', (event) => {
-      // this.someMethodName();  
-      const characterElement = event.target.closest('.character'); 
-      if (characterElement) {  
-        console.log('выпод подсказки + characterElement: ' + characterElement);
-        //const index = this.getIndex(characterElement); // Предполагается, что есть метод, который определяет индекс элемента  
-       // const index = this.getCharacterData(characterElement); // Предполагается, что есть метод, который определяет индекс элемента  
-        this.onCellEnter(index);  
-      } 
-    });
+    this.listeners();
 
-    // рандомим команду игрока
-    function randomPositionPlayerLeft(boardSize, countUnits) {
-      let randomUnitsLeft = []; // массив для рандомных юнитов
-      const randomPositionPlayerLeft = []; // массив левых двух столбцов 
-
-      for (let row = 0; row < boardSize; row++) {
-        randomPositionPlayerLeft.push(row * boardSize);
-        randomPositionPlayerLeft.push(row * boardSize + 1);
-      }
-
-      // Используем цикл для выбора случайных позиций  
-      while (randomUnitsLeft.length < countUnits) {
-        const p = Math.floor(Math.random() * randomPositionPlayerLeft.length);
-
-        // добавляем случайные позиции
-        if (!randomUnitsLeft.includes(randomPositionPlayerLeft[p])) {
-          randomUnitsLeft.push(randomPositionPlayerLeft[p]);
-        }
-      }
-
-      return randomUnitsLeft;
-    }
-
-    // рандомим команду противника
-    function randomPositionPlayerRight(boardSize, countUnits) {
-      let randomUnitsRight = []; // массив для рандомных юнитов
-      const randomPositionPlayerRight = []; // массив правых двух столбцов 
-
-      for (let row = 0; row < boardSize; row++) {
-        randomPositionPlayerRight.push(row * boardSize + (boardSize - 2));
-        randomPositionPlayerRight.push(row * boardSize + (boardSize - 1));
-      }
-
-      // Используем цикл для выбора случайных позиций  
-      while (randomUnitsRight.length < countUnits) {
-        const p = Math.floor(Math.random() * randomPositionPlayerRight.length);
-
-        // добавляем случайные позиции
-        if (!randomUnitsRight.includes(randomPositionPlayerRight[p])) {
-          randomUnitsRight.push(randomPositionPlayerRight[p]);
-        }
-      }
-
-      return randomUnitsRight;
-    }
-
-    
   }
 
-  someMethodName() { // <- что это за метод и где это нужно сделать решите сами
-    this.gameplay.addCellEnterListener(this.onCellEnter);   
+  // рандомим команду игрока
+  randomPositionPlayerLeft(boardSize, countUnits) {
+    let randomUnitsLeft = []; // массив для рандомных юнитов
+    const randomPositionPlayerLeft = []; // массив левых двух столбцов 
+
+    for (let row = 0; row < boardSize; row++) {
+      randomPositionPlayerLeft.push(row * boardSize);
+      randomPositionPlayerLeft.push(row * boardSize + 1);
+    }
+
+    // Используем цикл для выбора случайных позиций  
+    while (randomUnitsLeft.length < countUnits) {
+      const p = Math.floor(Math.random() * randomPositionPlayerLeft.length);
+
+      // добавляем случайные позиции
+      if (!randomUnitsLeft.includes(randomPositionPlayerLeft[p])) {
+        randomUnitsLeft.push(randomPositionPlayerLeft[p]);
+      }
+    }
+
+    return randomUnitsLeft;
+  }
+
+  // рандомим команду противника
+  randomPositionPlayerRight(boardSize, countUnits) {
+    let randomUnitsRight = []; // массив для рандомных юнитов
+    const randomPositionPlayerRight = []; // массив правых двух столбцов 
+
+    for (let row = 0; row < boardSize; row++) {
+      randomPositionPlayerRight.push(row * boardSize + (boardSize - 2));
+      randomPositionPlayerRight.push(row * boardSize + (boardSize - 1));
+    }
+
+    // Используем цикл для выбора случайных позиций  
+    while (randomUnitsRight.length < countUnits) {
+      const p = Math.floor(Math.random() * randomPositionPlayerRight.length);
+
+      // добавляем случайные позиции
+      if (!randomUnitsRight.includes(randomPositionPlayerRight[p])) {
+        randomUnitsRight.push(randomPositionPlayerRight[p]);
+      }
+    }
+
+    return randomUnitsRight;
+  }
+
+  listeners() {
+    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
   }
 
 
@@ -141,28 +135,24 @@ export default class GameController {
 
   onCellEnter(index) {
     // TODO: react to mouse enter
-    console.log('index это: ' + index);
-    // const character = this.getCharacterData(index);  
-    //const character = this.getCharacterData();  
-    // this.gamePlay.showCellTooltip(`U+1F396 1 U+2694 U+1F6E1 U+2764`, index);
-    //this.gamePlay.showCellTooltip('всплывающая подсказка', index);
+    // Ищем персонажа по индексу ячейки  
+    const positionedCharacter = this.massUnits.find(unit => unit.position === index);
 
-    const character = this.gameplay.cells[index];  
-    if (character) {  
-      // Используем метод для получения информации о персонаже  
-      const tooltipMessage = this.formatCharacterInfo(character);  
-      // Отображаем подсказку  
-      this.gameplay.showCellTooltip(tooltipMessage, index);  
+    // Если персонаж найден, показываем информацию  
+    if (positionedCharacter) {
+      const character = positionedCharacter.character; // Получаем самого персонажа  
+      const tooltipMessage = this.formatCharacterInfo(character); // Форматируем информацию  
+      this.gamePlay.showCellTooltip(tooltipMessage, index); // Показать подсказку  
     } 
   }
 
   onCellLeave(index) {
     // TODO: react to mouse leave
-    this.gamePlay.hideCellTooltip();
+    this.gamePlay.hideCellTooltip(index);
   }
 
   // Метод форматирования информации о персонаже  
-  formatCharacterInfo({ level, attack, defense, health }) {  
-    return `🎖${level} ⚔${attack} 🛡${defense} ❤${health}`;  
-  } 
+  formatCharacterInfo({ level, attack, defence, health }) {
+    return `\u{1F396}${level} \u{2694}${attack} \u{1F6E1}${defence} \u{2764}${health}`;
+  }
 }

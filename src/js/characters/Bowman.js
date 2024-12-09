@@ -9,15 +9,7 @@ export default class Bowman extends Character {
     if (level > 0 && level < 5) { 
       this.level = level; 
     } else { 
-      throw "Level 1 – 4 only"; 
+      throw new Error ("Level 1 – 4 only"); 
     } 
-  }
-  
-  getCharacterData() { 
-    return this.level;  
-  }
-
-  getIndex () {
-    return 'return index ';  
   }
 }
