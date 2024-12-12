@@ -1,15 +1,17 @@
 import Character from "../Character";
 
 export default class Undead extends Character {
-  constructor(level, type = 'undead') {
-    super(level, type);
+  constructor(level) {
+    super(level, 'undead');
     this.attack = 40;
     this.defence = 10;
+    this.speedCell = 4;
+    this.attackRange = 1;
 
     if (level > 0 && level < 5) { 
       this.level = level; 
     } else { 
-      throw "Level 1 – 4 only"; 
+      throw new Error ("Level 1 – 4 only"); 
     } 
   }
 }
