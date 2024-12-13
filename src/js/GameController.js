@@ -171,26 +171,38 @@ export default class GameController {
     // Ищем персонажа по индексу ячейки  
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
 
-    // Если персонаж найден, показываем информацию  
+    
+    // логика для выделения    
+    // Если курсор на выбранном персонаже, показываем желтое выделение  
+    if (this.selectedPlayerCharacter) {
+      const moveRange = this.selectedPlayerCharacter.speedCell;
+      const isValidMove = this.highlightAvailableMoves(this.selectedCharacterPosition, moveRange, index);
+      
+      if (isValidMove) {
+        this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки  
+      } else {
+        this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие
+      }
+    }
+    
+    // логика для курсора
     if (positionedCharacter) {
-      const character = positionedCharacter.character; // Получаем самого персонажа  
-      const tooltipMessage = this.formatCharacterInfo(character); // Форматируем информацию  
-      this.gamePlay.showCellTooltip(tooltipMessage, index); // Показать подсказку  
+      const character = positionedCharacter.character; // Получаем самого персонажа
 
       if (this.teamPlayer.includes(character.type)) {
         this.gamePlay.setCursor(cursors.pointer);
       } else {
         if (this.selectedPlayerCharacter) {
+
           if (this.teamCmp.includes(character.type)) {
             // Если персонаж врага, показываем курсор перекрестия  
             this.gamePlay.setCursor(cursors.crosshair);
-
             // Вычисляем расстояние  
             const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
 
             // Проверяем возможность атаки  
             if (distance <= this.selectedPlayerCharacter.attackRange) {
-              this.gamePlay.selectCell(index, 'red'); // Показать выделение  
+              this.gamePlay.selectCell(index, 'red'); // Показать выделение врага 
             }
           } else if (this.teamPlayer.includes(character.type)) {
             // Если персонаж наш, показываем указатель  
@@ -199,60 +211,26 @@ export default class GameController {
         }
       }
     } 
-
-
-    /* альтернативный вариант выделений.
-    // Если выбран персонаж, проверяем доступные ячейки для перемещения  
-    if (this.selectedPlayerCharacter) {
-      if (positionedCharacter && this.teamPlayer.includes(positionedCharacter.character.type)) {
-        this.gamePlay.setCursor(cursors.pointer); // Указатель для своего персонажа  
-      } else {
-        this.gamePlay.setCursor(cursors.crosshair); // Указатель для вражеского персонажа  
-        return; // Выходим, если курсор на вражеском персонаже  
-      }
-
-      // Получаем скорость для выбранного персонажа  
-      const moveRange = this.selectedPlayerCharacter.speedCell;
-
-      // Снимаем выделение с предыдущих ячеек  
-      this.massUnits.forEach((unit) => {
-        if (unit.selected) {
-          const previousIndex = unit.position;
-          this.gamePlay.deselectCell(previousIndex);
-        }
-      });
-
-      // Выбираем ячейки в диапазоне перемещения  
-      this.highlightAvailableMoves(index, moveRange);
-    } else {
-      // Если персонаж не выбран, просто показываем информацию о ячейке  
-      if (positionedCharacter) {
-        const character = positionedCharacter.character;
-        const tooltipMessage = this.formatCharacterInfo(character);
-        this.gamePlay.showCellTooltip(tooltipMessage, index);
-      }
-    }*/
+    
+    // Показываем информацию о ячейке  
+    if (positionedCharacter) {
+      const character = positionedCharacter.character;
+      const tooltipMessage = this.formatCharacterInfo(character);
+      this.gamePlay.showCellTooltip(tooltipMessage, index);
+    }
   }
+
 
   onCellLeave(index) {
     // TODO: react to mouse leave
-    const positionedCharacter = this.massUnits.find(unit => unit.position === index);
+    this.gamePlay.deselectCell(index); // Снятие выделения
+    this.gamePlay.setCursor(cursors.auto); // Убираем курсор  
+    this.gamePlay.hideCellTooltip(index); // Скрываем подсказку  
 
+    // Выделение персонажа оставляем, если он выбран
     if (this.selectedPlayerCharacter) {
-      //if (positionedCharacter && this.teamCmp.includes(positionedCharacter.character.type)) {
-      if (positionedCharacter) {
-        // Если уходит курсор с вражеского персонажа, снимаем выделение  
-        this.gamePlay.deselectCell(index);
-      } else {
-        // Если курсор уходит с пустой ячейки или своего персонажа, меняем курсор  
-        this.gamePlay.setCursor(cursors.auto);
-      }
-    } else {
-      // Если персонаж не выбран, просто меняем курсор  
-      this.gamePlay.setCursor(cursors.auto);
+      this.gamePlay.selectCell(this.selectedCharacterPosition, 'yellow');
     }
-
-    this.gamePlay.hideCellTooltip(index);
   }
 
   // Метод форматирования информации о персонаже  
@@ -271,21 +249,35 @@ export default class GameController {
     return Math.abs(x1 - x2) + Math.abs(y1 - y2);
   }
 
-  highlightAvailableMoves(startIndex, moveRange) {
+  // Метод расчёта клеток для хода 
+  highlightAvailableMoves(startIndex, moveRange, cursorIndex) {
     const startX = startIndex % this.gamePlay.boardSize; // X координата текущего положения  
     const startY = Math.floor(startIndex / this.gamePlay.boardSize); // Y координата текущего положения  
+    let cursorOnValidCell = false; // Для отслеживания, находится ли курсор на допустимой ячейке  
 
-    // Проходим по всем ячейкам поля  
-    for (let x = Math.max(0, startX - moveRange); x <= Math.min(this.gamePlay.boardSize - 1, startX + moveRange); x++) {
-      for (let y = Math.max(0, startY - moveRange); y <= Math.min(this.gamePlay.boardSize - 1, startY + moveRange); y++) {
-        const targetIndex = y * this.gamePlay.boardSize + x;
-        const distance = Math.abs(x - startX) + Math.abs(y - startY);
+    // Подсвечиваем доступные ячейки в пределах диапазона  
+    for (let dx = -moveRange; dx <= moveRange; dx++) {
+      for (let dy = -moveRange; dy <= moveRange; dy++) {
+        // Проверяем, что мы движемся по горизонтали, вертикали или диагонали  
+        if (Math.abs(dx) === Math.abs(dy) || dx === 0 || dy === 0) {
+          const targetX = startX + dx;
+          const targetY = startY + dy;
 
-        // Если ячейка в пределах допустимого расстояния  
-        if (distance <= moveRange) {
-          this.gamePlay.selectCell(targetIndex, 'green'); // Выделяем ячейку зеленым  
+          // Проверяем, находятся ли целевые координаты в пределах границ поля  
+          if (targetX >= 0 && targetX < this.gamePlay.boardSize &&
+            targetY >= 0 && targetY < this.gamePlay.boardSize) {
+            const targetIndex = targetY * this.gamePlay.boardSize + targetX;
+            //this.gamePlay.selectCell(targetIndex, 'red'); // Подсветка всех доступных ячеек, на будущее  
+
+            // Проверяем, равен ли targetIndex текущему индексу курсора  
+            if (targetIndex === cursorIndex) {
+              cursorOnValidCell = true; // Курсор на допустимой ячейке  
+            }
+          }
         }
       }
     }
+
+    return cursorOnValidCell; // Возвращаем true или false  
   }
 }
