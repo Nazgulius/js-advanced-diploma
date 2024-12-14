@@ -2,8 +2,8 @@
 
 export default class GameState {
   constructor() {
-    this.board = Array(64).fill(null); // Игровое поле (состояние)  
-    this.currentPlayer = 'X'; // Игрок 'X' начинает первым  
+    //this.board = Array(64).fill(null); // Игровое поле (состояние)  
+    this.currentPlayer = 'Игрок 1'; // Игрок 'Игрок 1' начинает первым  
   }
   static from(object) {
     // TODO: create object
@@ -15,20 +15,22 @@ export default class GameState {
   }
 
   // Метод для совершения хода  
-  makeMove(position) {
-    if (this.isValidMove(position)) {
-      this.board[position] = this.currentPlayer;
-      if (!this.checkWinner()) {
-        this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X'; // Переключаем игрока  
-      }
-    }
-  }
+  // makeMove(position) {
+  //   if (this.isValidMove(position)) {
+  //     this.board[position] = this.currentPlayer;
+  //     if (!this.checkWinner()) {
+  //       this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X'; // Переключаем игрока  
+  //     }
+  //   }
+  // }
 
   // Проверка действительности хода  
   isValidMove(position) {
-    return this.board[position] === null && position >= 0 && position < 9;
+    //return this.board[position] === null && position >= 0 && position < 64;
+    return true; // Или логика проверки   
   }
 
+  // проверка победителя
   checkWinner() {
     const winPatterns = [
       // условия победы

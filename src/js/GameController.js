@@ -21,6 +21,7 @@ export default class GameController {
     this.teamCmp = ['daemon', 'undead', 'vampire'];
     this.selectedPlayerCharacter = null; // Храним информацию о выбранном персонаже игрока  
     this.selectedCharacterPosition = null;
+    this.gameState = new GameState();
   }
 
   init() {
@@ -59,7 +60,6 @@ export default class GameController {
       // генерация команды
       const team2 = generateTeam([Bowman, Swordsman, Magician], 3, countTeamPlayer); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
       const team3 = generateTeam([Daemon, Undead, Vampire], 3, countTeamCmp); // массив из 4 случайных персонажей playerTypes с уровнем 1, 2 или 3
-      let massUnits = [];
 
       // геренируем команду игрока
       const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, countTeamPlayer);
@@ -75,7 +75,6 @@ export default class GameController {
 
       this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
 
-      GameState.from();
     });
 
     this.listeners();
@@ -137,7 +136,6 @@ export default class GameController {
 
   onCellClick(index) {
     // TODO: react to click
-
     // Ищем персонажа по индексу ячейки 
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
 
@@ -146,6 +144,16 @@ export default class GameController {
       if (unit.position != index) {
         this.gamePlay.deselectCell(unit.position);
         unit.selected = false;
+      }
+    }
+
+    // логика для перемещения
+    if (this.selectedPlayerCharacter) {
+      if (this.calculationAvailableMoves(this.selectedCharacterPosition, this.selectedPlayerCharacter.speedCell, index)) {
+        this.makeMove({
+          from: this.selectedCharacterPosition,  // Начальная позиция  
+          to: index,    // Конечная позиция   
+        });
       }
     }
 
@@ -164,6 +172,7 @@ export default class GameController {
       this.selectedPlayerCharacter = null;
     }
 
+
   }
 
   onCellEnter(index) {
@@ -171,20 +180,32 @@ export default class GameController {
     // Ищем персонажа по индексу ячейки  
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
 
-    
+
     // логика для выделения    
     // Если курсор на выбранном персонаже, показываем желтое выделение  
     if (this.selectedPlayerCharacter) {
       const moveRange = this.selectedPlayerCharacter.speedCell;
-      const isValidMove = this.highlightAvailableMoves(this.selectedCharacterPosition, moveRange, index);
-      
+      const attackRange = this.selectedPlayerCharacter.attackRange;
+      const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
+
+      // Вычисляем расстояние  
+      const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
+
+      // Проверяем возможность атаки  
+      if (positionedCharacter) {
+        if (distance <= attackRange && this.teamCmp.includes(positionedCharacter.character.type)) {
+
+          this.gamePlay.selectCell(index, 'red'); // Показать выделение врага 
+        }
+      }
+
       if (isValidMove) {
         this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки  
       } else {
         this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие
       }
     }
-    
+
     // логика для курсора
     if (positionedCharacter) {
       const character = positionedCharacter.character; // Получаем самого персонажа
@@ -197,21 +218,15 @@ export default class GameController {
           if (this.teamCmp.includes(character.type)) {
             // Если персонаж врага, показываем курсор перекрестия  
             this.gamePlay.setCursor(cursors.crosshair);
-            // Вычисляем расстояние  
-            const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
 
-            // Проверяем возможность атаки  
-            if (distance <= this.selectedPlayerCharacter.attackRange) {
-              this.gamePlay.selectCell(index, 'red'); // Показать выделение врага 
-            }
           } else if (this.teamPlayer.includes(character.type)) {
             // Если персонаж наш, показываем указатель  
             this.gamePlay.setCursor(cursors.pointer);
           }
         }
       }
-    } 
-    
+    }
+
     // Показываем информацию о ячейке  
     if (positionedCharacter) {
       const character = positionedCharacter.character;
@@ -250,7 +265,7 @@ export default class GameController {
   }
 
   // Метод расчёта клеток для хода 
-  highlightAvailableMoves(startIndex, moveRange, cursorIndex) {
+  calculationAvailableMoves(startIndex, moveRange, cursorIndex) {
     const startX = startIndex % this.gamePlay.boardSize; // X координата текущего положения  
     const startY = Math.floor(startIndex / this.gamePlay.boardSize); // Y координата текущего положения  
     let cursorOnValidCell = false; // Для отслеживания, находится ли курсор на допустимой ячейке  
@@ -279,5 +294,30 @@ export default class GameController {
     }
 
     return cursorOnValidCell; // Возвращаем true или false  
+  }
+
+  // сделать ход
+  makeMove(move) {
+    console.log('makeMove начало');
+    // Проверка возможности хода  
+    if (this.gameState.isValidMove(move)) {
+      // Обновление состояния игры 
+      for (let unit of this.massUnits) {
+        if (unit.position === move.from) {
+          unit.position = move.to;
+          this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
+        }
+      }
+
+      this.switchPlayer(); // Смена игрока после успешного хода
+    } else {
+      console.log('Неверный ход, попробуйте снова.');
+    }
+  }
+
+  // Смена игрока после успешного хода
+  switchPlayer() {
+    this.gameState.currentPlayer = (this.gameState.currentPlayer === 'Игрок 1') ? 'Игрок 2' : 'Игрок 1';
+    console.log(`Сейчас ход: ${this.gameState.currentPlayer}`);
   }
 }
