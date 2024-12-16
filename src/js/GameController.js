@@ -147,54 +147,59 @@ export default class GameController {
       }
     }
 
-    // логика для перемещения или атаки
-    if (this.selectedPlayerCharacter) {
-      if (this.calculationAvailableMoves(this.selectedCharacterPosition, this.selectedPlayerCharacter.speedCell, index)) {
-        if (!positionedCharacter) {
-          this.makeMove({
-            from: this.selectedCharacterPosition,  // Начальная позиция  
-            to: index,    // Конечная позиция   
-          });
-        } else if (this.teamPlayer.includes(positionedCharacter.character.type)) {
-          // Если щелкаем на своего персонажа, выберите его  
-          this.gamePlay.selectCell(index);
-          positionedCharacter.selected = true;
-          this.selectedPlayerCharacter = positionedCharacter.character; // Сохраняем выбранного персонажа  
+    console.log('ходит ' + this.gameState.currentPlayer);
+    // ход Игрока 1
+    if (this.gameState.currentPlayer === 'Игрок 1') {
+      // логика для перемещения или атаки
+      if (this.selectedPlayerCharacter) {
+        if (this.calculationAvailableMoves(this.selectedCharacterPosition, this.selectedPlayerCharacter.speedCell, index)) {
+          if (!positionedCharacter) {
+            this.makeMove({
+              from: this.selectedCharacterPosition,  // Начальная позиция  
+              to: index,    // Конечная позиция   
+            });
+            this.switchPlayer(); // Смена игрока после успешного хода
+          } else if (this.teamPlayer.includes(positionedCharacter.character.type)) {
+            // Если щелкаем на своего персонажа, выберите его  
+            this.gamePlay.selectCell(index);
+            positionedCharacter.selected = true;
+            this.selectedPlayerCharacter = positionedCharacter.character; // Сохраняем выбранного персонажа  
+            this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
+          } else {
+            // Если противник, выполняем атаку без перемещения 
+            this.makeAttack({
+              from: this.selectedCharacterPosition,  // Начальная позиция  
+              to: index,    // Конечная позиция 
+              target: positionedCharacter,
+            });
+            this.switchPlayer(); // Смена игрока после успешного хода
+            // возможное ответное действие противника 
+          }
+        }
+      } else if (positionedCharacter) {
+        // Если выбранный персонаж еще не установлен и щелкаем на другого
+        const character = positionedCharacter.character; // Получаем самого персонажа  
+        if (this.teamPlayer.includes(character.type)) {
+          this.gamePlay.selectCell(index); // Показать выделение  
+          character.selected = true;
+          this.selectedPlayerCharacter = character; // Сохраняем выбранного персонажа 
           this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
         } else {
-          // Если противник, выполняем атаку без перемещения 
-          this.makeAttack({
-            from: this.selectedCharacterPosition,  // Начальная позиция  
-            to: index,    // Конечная позиция 
-            target: positionedCharacter,
-            // attacker: This.selectedPlayerCharacter,
-          });
-          // действие противника  
-
+          // Ошибка, так как выбран вражеский персонаж
+          GamePlay.showError('Выбран вражеский персонаж!');
         }
-      }
-    } else if (positionedCharacter) {
-      // Если выбранный персонаж еще не установлен и щелкаем на другого
-      const character = positionedCharacter.character; // Получаем самого персонажа  
-      if (this.teamPlayer.includes(character.type)) {
-        this.gamePlay.selectCell(index); // Показать выделение  
-        character.selected = true;
-        this.selectedPlayerCharacter = character; // Сохраняем выбранного персонажа 
-        this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
       } else {
-        // Ошибка, так как выбран вражеский персонаж
-        GamePlay.showError('Выбран вражеский персонаж!');
+        this.selectedPlayerCharacter = null;
       }
-    } else {
-      this.selectedPlayerCharacter = null;
     }
+
+    this.makeCmpLogic();
   }
 
   onCellEnter(index) {
     // TODO: react to mouse enter
     // Ищем персонажа по индексу ячейки  
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
-
 
     // логика для выделения    
     // Если курсор на выбранном персонаже, показываем желтое выделение  
@@ -311,15 +316,43 @@ export default class GameController {
     return cursorOnValidCell; // Возвращаем true или false  
   }
 
+  // направление от одной позиции к другой и возвращает объект с разницей по координатам X и Y
+  calculateDirection(position1, position2, boardSize) {
+    const x1 = position1 % boardSize; // X координата первого персонажа  
+    const y1 = Math.floor(position1 / boardSize); // Y координата первого персонажа  
+    const x2 = position2 % boardSize; // X координата второго персонажа  
+    const y2 = Math.floor(position2 / boardSize); // Y координата второго персонажа  
+
+    const direction = {
+      x: x2 - x1, // Разница по X  
+      y: y2 - y1  // Разница по Y  
+    };
+
+    return direction; // Возвращаем направление  
+  }
+
+  // функция проверяет, находится ли позиция в пределах границ игрового поля
+  validatePosition(position) {
+    const x = position.x;
+    const y = position.y;
+
+    // Проверка на пределах поля  
+    return (
+      x >= 0 &&
+      x < this.gamePlay.boardSize &&
+      y >= 0 &&
+      y < this.gamePlay.boardSize
+    );
+  }
+
   // Смена игрока после успешного хода
   switchPlayer() {
     this.gameState.currentPlayer = (this.gameState.currentPlayer === 'Игрок 1') ? 'Игрок 2' : 'Игрок 1';
     console.log(`Сейчас ход: ${this.gameState.currentPlayer}`);
   }
 
-  // сделать ход
+  // перемещение
   makeMove(move) {
-    console.log('makeMove начало');
     // Проверка возможности хода  
     if (this.gameState.isValidMove(move)) {
       // Обновление состояния игры 
@@ -329,15 +362,13 @@ export default class GameController {
           this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
         }
       }
-
-      this.switchPlayer(); // Смена игрока после успешного хода
     } else {
       console.log('Неверный ход, попробуйте снова.');
     }
   }
 
+  // атака
   async makeAttack(attack) {
-    console.log('атака началась');
     // Проверка возможности хода  
     if (this.gameState.isValidMove(attack)) { // возможно переделать на валидность атаки, а не мува. Или сделать общую валидность, типо make, действия 
 
@@ -346,18 +377,99 @@ export default class GameController {
         if (unit.position === attack.from) {
           const attacker = unit.character; // атакующий персонаж
           const target = attack.target.character; // атакованный персонаж 
-          
           const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
           target.health -= damage; // проверить, достаточно target или нужна attack.target 
-          console.log('атаковали на ' + damage + ' отображение урона');
           await this.gamePlay.showDamage(attack.target.position, damage); // показать анимацию с промисом   
-          // 
           this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
         }
       }
-      this.switchPlayer(); // Смена игрока после успешного хода 
     } else {
       console.log('Неверный ход, попробуйте снова.');
+    }
+  }
+
+  // действия CMP, Игрок 2
+  makeCmpLogic() {
+    // ход Игрока 2 (CMP)
+    if (this.gameState.currentPlayer === 'Игрок 2') {
+      for (let unit of this.massUnits) {
+        if (this.teamCmp.includes(unit.character.type)) { // совпадение для персонажа CMP
+          let massDistanceToPlayer = [];
+          let closestUnitPlayer = null; // Для хранения ближайшего персонажа игрока 1  
+          let minDistance = Infinity; // Начальное значение для минимального расстояния  
+
+          // Поиск ближайшего персонажа игрока 1  
+          for (let unitPlayer of this.massUnits) {
+            if (this.teamPlayer.includes(unitPlayer.character.type)) { // совпадение для персонажа Игрока 1
+              const distance = this.calculateDistance(unit.position, unitPlayer.position, this.gamePlay.boardSize);
+              massDistanceToPlayer.push([distance, unit, unitPlayer]);
+
+              // Проверяем, является ли это ближайшим персонажем  
+              if (distance < minDistance) {
+                minDistance = distance;
+                closestUnitPlayer = unitPlayer; // Сохраняем ближайшего персонажа  
+              }
+            }
+            // Логирование найденных расстояний  
+            // for (let i of massDistanceToPlayer) {
+            //   console.log(i);
+            // }
+          }
+
+          // Если ближайший персонаж найден  
+          if (closestUnitPlayer) {
+            console.log(`Ближайший персонаж Игрока 1: ${closestUnitPlayer.character.name} на расстоянии ${minDistance}`);
+
+            // Расстояние, на которое может двигаться персонаж  
+            const speedCell = unit.character.speedCell;
+            const attackRange = unit.character.attackRange;
+
+            // Если противник слишком близко, атаковать  
+            if (minDistance <= attackRange) {
+              this.makeAttack({
+                from: unit.position,  // Начальная позиция  
+                to: closestUnitPlayer.position,    // Конечная позиция   
+                target: closestUnitPlayer // Цель атаки  
+              });
+            } else if (minDistance <= speedCell) {
+              // Перемещаемся на шаг к противнику, но остаемся за одну клетку до него  
+              const directionToPlayer = this.calculateDirection(unit.position, closestUnitPlayer.position, this.gamePlay.boardSize);
+              const targetPosition = {
+                x: closestUnitPlayer.position.x - directionToPlayer.x,
+                y: closestUnitPlayer.position.y - directionToPlayer.y
+              };
+
+              // Проверяем, чтобы позиция была действительной в пределах игрового поля  
+              if (this.validatePosition(targetPosition)) {
+                this.makeMove({
+                  from: unit.position,  // Начальная позиция  
+                  to: targetPosition // Конечная позиция   
+                });
+              }
+            } else {
+              // Если противник вне диапазона движения, перемещаемся на максимально возможное расстояние в сторону противника  
+              const directionToPlayer = this.calculateDirection(unit.position, closestUnitPlayer.position, this.gamePlay.boardSize);
+              const targetPosition = {
+                x: unit.position.x + directionToPlayer.x * speedCell,
+                y: unit.position.y + directionToPlayer.y * speedCell
+              };
+
+              // Проверяем, чтобы позиция была действительной в пределах игрового поля  
+              if (this.validatePosition(targetPosition)) {
+                this.makeMove({
+                  from: unit.position,  // Начальная позиция  
+                  to: targetPosition // Конечная позиция   
+                });
+              }
+            }
+          } else {
+            console.log('Нет доступных врагов для атаки.');
+          }
+
+          console.log('конец хода Игрока 2');
+        }
+      }
+      this.switchPlayer(); // Смена игрока после успешного хода
     }
   }
 }
