@@ -147,32 +147,47 @@ export default class GameController {
       }
     }
 
-    // логика для перемещения
+    // логика для перемещения или атаки
     if (this.selectedPlayerCharacter) {
       if (this.calculationAvailableMoves(this.selectedCharacterPosition, this.selectedPlayerCharacter.speedCell, index)) {
-        this.makeMove({
-          from: this.selectedCharacterPosition,  // Начальная позиция  
-          to: index,    // Конечная позиция   
-        });
-      }
-    }
+        if (!positionedCharacter) {
+          this.makeMove({
+            from: this.selectedCharacterPosition,  // Начальная позиция  
+            to: index,    // Конечная позиция   
+          });
+        } else if (this.teamPlayer.includes(positionedCharacter.character.type)) {
+          // Если щелкаем на своего персонажа, выберите его  
+          this.gamePlay.selectCell(index);
+          positionedCharacter.selected = true;
+          this.selectedPlayerCharacter = positionedCharacter.character; // Сохраняем выбранного персонажа  
+          this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
+        } else {
+          // Если противник, выполняем атаку без перемещения 
+          this.makeAttack({
+            from: this.selectedCharacterPosition,  // Начальная позиция  
+            to: index,    // Конечная позиция 
+            target: positionedCharacter,
+            // attacker: This.selectedPlayerCharacter,
+          });
+          // действие противника  
 
-    if (positionedCharacter) {
+        }
+      }
+    } else if (positionedCharacter) {
+      // Если выбранный персонаж еще не установлен и щелкаем на другого
       const character = positionedCharacter.character; // Получаем самого персонажа  
-      //if (character.type === 'bowman' || character.type === 'magician' || character.type === 'swordsman') {
       if (this.teamPlayer.includes(character.type)) {
         this.gamePlay.selectCell(index); // Показать выделение  
         character.selected = true;
         this.selectedPlayerCharacter = character; // Сохраняем выбранного персонажа 
         this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
       } else {
+        // Ошибка, так как выбран вражеский персонаж
         GamePlay.showError('Выбран вражеский персонаж!');
       }
     } else {
       this.selectedPlayerCharacter = null;
     }
-
-
   }
 
   onCellEnter(index) {
@@ -296,6 +311,12 @@ export default class GameController {
     return cursorOnValidCell; // Возвращаем true или false  
   }
 
+  // Смена игрока после успешного хода
+  switchPlayer() {
+    this.gameState.currentPlayer = (this.gameState.currentPlayer === 'Игрок 1') ? 'Игрок 2' : 'Игрок 1';
+    console.log(`Сейчас ход: ${this.gameState.currentPlayer}`);
+  }
+
   // сделать ход
   makeMove(move) {
     console.log('makeMove начало');
@@ -315,9 +336,28 @@ export default class GameController {
     }
   }
 
-  // Смена игрока после успешного хода
-  switchPlayer() {
-    this.gameState.currentPlayer = (this.gameState.currentPlayer === 'Игрок 1') ? 'Игрок 2' : 'Игрок 1';
-    console.log(`Сейчас ход: ${this.gameState.currentPlayer}`);
+  async makeAttack(attack) {
+    console.log('атака началась');
+    // Проверка возможности хода  
+    if (this.gameState.isValidMove(attack)) { // возможно переделать на валидность атаки, а не мува. Или сделать общую валидность, типо make, действия 
+
+      // Обновление состояния игры 
+      for (let unit of this.massUnits) {
+        if (unit.position === attack.from) {
+          const attacker = unit.character; // атакующий персонаж
+          const target = attack.target.character; // атакованный персонаж 
+          
+          const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
+          target.health -= damage; // проверить, достаточно target или нужна attack.target 
+          console.log('атаковали на ' + damage + ' отображение урона');
+          await this.gamePlay.showDamage(attack.target.position, damage); // показать анимацию с промисом   
+          // 
+          this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
+        }
+      }
+      this.switchPlayer(); // Смена игрока после успешного хода 
+    } else {
+      console.log('Неверный ход, попробуйте снова.');
+    }
   }
 }
