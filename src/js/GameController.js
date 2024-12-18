@@ -135,65 +135,89 @@ export default class GameController {
 
 
   onCellClick(index) {
-    // TODO: react to click
-    // Ищем персонажа по индексу ячейки 
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
 
-    // снимаем выделение у всех, кроме выбранного персонажа
-    for (let unit of this.massUnits) {
-      if (unit.position != index) {
-        this.gamePlay.deselectCell(unit.position);
-        unit.selected = false;
-      }
-    }
+    // Если уже есть выбранный персонаж  
+    if (this.selectedPlayerCharacter) {
+      const moveRange = this.selectedPlayerCharacter.speedCell;
+      const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
 
-    console.log('ходит ' + this.gameState.currentPlayer);
-    // ход Игрока 1
-    if (this.gameState.currentPlayer === 'Игрок 1') {
-      // логика для перемещения или атаки
-      if (this.selectedPlayerCharacter) {
-        if (this.calculationAvailableMoves(this.selectedCharacterPosition, this.selectedPlayerCharacter.speedCell, index)) {
-          if (!positionedCharacter) {
-            this.makeMove({
-              from: this.selectedCharacterPosition,  // Начальная позиция  
-              to: index,    // Конечная позиция   
-            });
-            this.switchPlayer(); // Смена игрока после успешного хода
-          } else if (this.teamPlayer.includes(positionedCharacter.character.type)) {
-            // Если щелкаем на своего персонажа, выберите его  
-            this.gamePlay.selectCell(index);
-            positionedCharacter.selected = true;
-            this.selectedPlayerCharacter = positionedCharacter.character; // Сохраняем выбранного персонажа  
-            this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
-          } else {
-            // Если противник, выполняем атаку без перемещения 
-            this.makeAttack({
-              from: this.selectedCharacterPosition,  // Начальная позиция  
-              to: index,    // Конечная позиция 
-              target: positionedCharacter,
-            });
-            this.switchPlayer(); // Смена игрока после успешного хода
-            // возможное ответное действие противника 
+      // Проверяем, является ли текущая ячейка допустимым перемещением  
+      if (isValidMove && !positionedCharacter) {
+        // Если перемещение допустимо и ячейка свободна, выполняем перемещение  
+        this.makeMove({
+          from: this.selectedCharacterPosition,  // Начальная позиция  
+          to: index   // Конечная позиция   
+        });
+
+        this.gamePlay.deselectCell(this.selectedCharacterPosition); // Снять выделение с предыдущей  
+        this.gamePlay.selectCell(index, 'yellow'); // Выделить нового персонажа на новой позиции  
+        this.selectedCharacterPosition = index; // Обновить позицию  
+        this.selectedPlayerCharacter = null; // Сбросить выбор персонажа для следующего хода  
+
+        this.switchPlayer(); // Переключение на другого игрока  
+        this.makeCmpLogic(); // Логика компьютера  
+        return;
+      }
+
+      // Проверяем атаку на вражеского персонажа  
+      else if (positionedCharacter && this.teamCmp.includes(positionedCharacter.character.type) && this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize) <= this.selectedPlayerCharacter.attackRange) {
+        this.makeAttack({
+          from: this.selectedCharacterPosition,  // Начальная позиция  
+          to: index,    // Конечная позиция   
+          target: positionedCharacter,
+        });
+
+        this.gamePlay.deselectCell(this.selectedCharacterPosition); // Снять выделение с предыдущей  
+        this.selectedPlayerCharacter = null; // Сбросить выбор персонажа после атаки  
+        this.switchPlayer(); // Смена игрока после успешного хода  
+        this.makeCmpLogic(); // Логика компьютера  
+      }
+      // Если кликнули на своего персонажа или пустую ячейку  
+      else {
+        // Сбрасываем выделение предыдущих персонажей  
+        this.massUnits.forEach(unit => {
+          if (unit.selected) {
+            unit.selected = false;
+            this.gamePlay.deselectCell(unit.position); // Снять выделение  
           }
-        }
-      } else if (positionedCharacter) {
-        // Если выбранный персонаж еще не установлен и щелкаем на другого
-        const character = positionedCharacter.character; // Получаем самого персонажа  
-        if (this.teamPlayer.includes(character.type)) {
-          this.gamePlay.selectCell(index); // Показать выделение  
-          character.selected = true;
-          this.selectedPlayerCharacter = character; // Сохраняем выбранного персонажа 
+        });
+
+        // Тут ничего больше не делаем, просто сбрасываем выделение  
+        if (positionedCharacter) {
+          // Если кликнули на своего персонажа, выделяем его  
           this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
+          this.selectedPlayerCharacter = positionedCharacter.character; // Сохраняем выбранного персонажа  
+          this.gamePlay.selectCell(index, 'yellow'); // Выделяем своего персонажа  
         } else {
-          // Ошибка, так как выбран вражеский персонаж
-          GamePlay.showError('Выбран вражеский персонаж!');
+          // Если пустая ячейка, просто возвращаемся  
+          this.selectedPlayerCharacter = null; // Сбросить выбор персонажа  
+          this.selectedCharacterPosition = null; // Очистить позицию  
         }
-      } else {
-        this.selectedPlayerCharacter = null;
+        return;
       }
     }
+    // Если никакой персонаж не выбран, выбираем персонажа, если он относится к команде игрока  
+    else if (positionedCharacter) {
+      if (this.teamPlayer.includes(positionedCharacter.character.type)) {
+        // Снять выделение со всех персонажей  
+        this.massUnits.forEach(unit => {
+          if (unit.selected) {
+            unit.selected = false;
+            this.gamePlay.deselectCell(unit.position); // Снять выделение с предыдущих ячеек  
+          }
+        });
 
-    this.makeCmpLogic();
+        // Выделяем нового персонажа  
+        positionedCharacter.selected = true;
+        this.selectedPlayerCharacter = positionedCharacter.character; // Сохраняем выбранного персонажа  
+        this.selectedCharacterPosition = index; // Сохраняем позицию выбранного персонажа  
+        this.gamePlay.selectCell(index, 'yellow'); // Выделяем своего персонажа  
+      } else {
+        // Если выбран вражеский персонаж, можно показать окно  
+        GamePlay.showError('Выбран вражеский персонаж!');
+      }
+    }
   }
 
   onCellEnter(index) {
@@ -201,49 +225,44 @@ export default class GameController {
     // Ищем персонажа по индексу ячейки  
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
 
-    // логика для выделения    
-    // Если курсор на выбранном персонаже, показываем желтое выделение  
+    // Логика для выделения  
     if (this.selectedPlayerCharacter) {
       const moveRange = this.selectedPlayerCharacter.speedCell;
       const attackRange = this.selectedPlayerCharacter.attackRange;
       const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
 
-      // Вычисляем расстояние  
+      // Рассчитываем расстояние  
       const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
 
       // Проверяем возможность атаки  
       if (positionedCharacter) {
         if (distance <= attackRange && this.teamCmp.includes(positionedCharacter.character.type)) {
-          this.gamePlay.selectCell(index, 'red'); // Показать выделение врага 
+          this.gamePlay.selectCell(index, 'red'); // Показать выделение врага   
         }
       }
 
       if (isValidMove) {
-        this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки  
+        this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки для перемещения  
       } else {
-        this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие
+        this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие  
       }
     }
 
-    // логика для курсора
+    // Логика для курсора  
     if (positionedCharacter) {
-      const character = positionedCharacter.character; // Получаем самого персонажа
+      const character = positionedCharacter.character; // Получаем самого персонажа  
 
       if (this.teamPlayer.includes(character.type)) {
-        this.gamePlay.setCursor(cursors.pointer);
-      } else {
-        if (this.selectedPlayerCharacter) {
-
-          if (this.teamCmp.includes(character.type)) {
-            // Если персонаж врага, показываем курсор перекрестия  
-            this.gamePlay.setCursor(cursors.crosshair);
-
-          } else if (this.teamPlayer.includes(character.type)) {
-            // Если персонаж наш, показываем указатель  
-            this.gamePlay.setCursor(cursors.pointer);
-          }
+        this.gamePlay.setCursor(cursors.pointer); // Указатель для своего персонажа  
+      } else if (this.selectedPlayerCharacter) {
+        if (this.teamCmp.includes(character.type)) {
+          // Если персонаж врага, показываем курсор перекрестия  
+          this.gamePlay.setCursor(cursors.crosshair);
         }
       }
+    } else {
+      // Если на ячейке нет персонажа, указатель остается как есть  
+      this.gamePlay.setCursor(cursors.auto);
     }
 
     // Показываем информацию о ячейке  
@@ -261,10 +280,22 @@ export default class GameController {
     this.gamePlay.setCursor(cursors.auto); // Убираем курсор  
     this.gamePlay.hideCellTooltip(index); // Скрываем подсказку  
 
-    // Выделение персонажа оставляем, если он выбран
+    // Сбрасываем выделение выбранного персонажа 
+    // if (this.selectedPlayerCharacter) {
+    //   this.gamePlay.selectCell(this.selectedCharacterPosition, 'yellow');
+    // }
+
+    // Сброс выделения, если мы не уходим с выделенной ячейки  
     if (this.selectedPlayerCharacter) {
-      this.gamePlay.selectCell(this.selectedCharacterPosition, 'yellow');
+      const isSelectedCharacterPosition = this.selectedCharacterPosition === index;
+
+      // Если уходим с ячейки, которая не выбрана  
+      if (!isSelectedCharacterPosition) {
+        // Дополнительно показываем выделение на выбранном персонаже  
+        this.gamePlay.selectCell(this.selectedCharacterPosition, 'yellow'); // Желтое выделение  
+      }
     }
+
   }
 
   // Метод форматирования информации о персонаже  
@@ -395,7 +426,6 @@ export default class GameController {
     if (this.gameState.currentPlayer === 'Игрок 2') {
       for (let unit of this.massUnits) {
         if (this.teamCmp.includes(unit.character.type)) { // совпадение для персонажа CMP
-          let massDistanceToPlayer = [];
           let closestUnitPlayer = null; // Для хранения ближайшего персонажа игрока 1  
           let minDistance = Infinity; // Начальное значение для минимального расстояния  
 
@@ -403,7 +433,6 @@ export default class GameController {
           for (let unitPlayer of this.massUnits) {
             if (this.teamPlayer.includes(unitPlayer.character.type)) { // совпадение для персонажа Игрока 1
               const distance = this.calculateDistance(unit.position, unitPlayer.position, this.gamePlay.boardSize);
-              massDistanceToPlayer.push([distance, unit, unitPlayer]);
 
               // Проверяем, является ли это ближайшим персонажем  
               if (distance < minDistance) {
@@ -420,7 +449,7 @@ export default class GameController {
             // Расстояние, на которое может двигаться персонаж  
             const speedCell = unit.character.speedCell;
             const attackRange = unit.character.attackRange;
-            
+
             // Если противник слишком близко, атаковать  
             if (minDistance <= attackRange) {
               console.log(`${unit.character.type} делает атаку`);
@@ -434,15 +463,15 @@ export default class GameController {
               const directionToPlayer = this.calculateDirection(unit.position, closestUnitPlayer.position, this.gamePlay.boardSize);
 
               const targetPosition = {
-                x: closestUnitPlayer.position.x - directionToPlayer.x,
-                y: closestUnitPlayer.position.y - directionToPlayer.y
+                x: closestUnitPlayer.position % this.gamePlay.boardSize - directionToPlayer.x,
+                y: Math.floor(closestUnitPlayer.position / this.gamePlay.boardSize) - directionToPlayer.y
               };
 
               // Преобразуем targetPosition в единый индекс  
               const targetIndex = targetPosition.y * this.gamePlay.boardSize + targetPosition.x;
 
-              // Проверяем, чтобы позиция была действительной в пределах игрового поля  
-              if (this.validatePosition(targetPosition)) {
+              // Проверяем, чтобы позиция была действительной в пределах игрового поля и не была занята  
+              if (this.validatePosition(targetPosition) && !this.isCellOccupied(targetIndex)) {
                 console.log(`${unit.character.type} делает ход`);
                 this.makeMove({
                   from: unit.position,  // Начальная позиция  
@@ -461,7 +490,7 @@ export default class GameController {
               const targetIndex = targetPosition.y * this.gamePlay.boardSize + targetPosition.x;
 
               // Проверяем, чтобы позиция была действительной в пределах игрового поля  
-              if (this.validatePosition(targetPosition)) {
+              if (this.validatePosition(targetPosition) && !this.isCellOccupied(targetIndex)) {
                 console.log(`${unit.character.type} делает ход 2`);
                 this.makeMove({
                   from: unit.position,  // Начальная позиция  
@@ -477,5 +506,15 @@ export default class GameController {
     }
     console.log('конец хода Игрока 2');
     this.switchPlayer(); // Смена игрока после успешного хода
+  }
+
+  // Проверка на занятость клетки
+  isCellOccupied(index) {
+    for (let unit of this.massUnits) {
+      if (unit.position === index) {
+        return true; // Ячейка занята  
+      }
+    }
+    return false; // Ячейка свободна  
   }
 }
