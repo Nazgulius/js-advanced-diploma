@@ -233,6 +233,12 @@ export default class GameController {
 
       // Рассчитываем расстояние  
       const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
+      
+      if (isValidMove) {
+        this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки для перемещения  
+      } else {
+        this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие  
+      }
 
       // Проверяем возможность атаки  
       if (positionedCharacter) {
@@ -241,29 +247,10 @@ export default class GameController {
         }
       }
 
-      if (isValidMove) {
-        this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки для перемещения  
-      } else {
-        this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие  
-      }
     }
 
     // Логика для курсора  
-    if (positionedCharacter) {
-      const character = positionedCharacter.character; // Получаем самого персонажа  
-
-      if (this.teamPlayer.includes(character.type)) {
-        this.gamePlay.setCursor(cursors.pointer); // Указатель для своего персонажа  
-      } else if (this.selectedPlayerCharacter) {
-        if (this.teamCmp.includes(character.type)) {
-          // Если персонаж врага, показываем курсор перекрестия  
-          this.gamePlay.setCursor(cursors.crosshair);
-        }
-      }
-    } else {
-      // Если на ячейке нет персонажа, указатель остается как есть  
-      this.gamePlay.setCursor(cursors.auto);
-    }
+    this.cursorsLogic(positionedCharacter);
 
     // Показываем информацию о ячейке  
     if (positionedCharacter) {
@@ -295,7 +282,6 @@ export default class GameController {
         this.gamePlay.selectCell(this.selectedCharacterPosition, 'yellow'); // Желтое выделение  
       }
     }
-
   }
 
   // Метод форматирования информации о персонаже  
@@ -310,6 +296,7 @@ export default class GameController {
     const x2 = position2 % boardSize; // X координата второго персонажа  
     const y2 = Math.floor(position2 / boardSize); // Y координата второго персонажа  
 
+    
     // Вычисляем расстояние как сумму абсолютных разностей по X и Y  
     return Math.abs(x1 - x2) + Math.abs(y1 - y2);
   }
@@ -383,6 +370,26 @@ export default class GameController {
     console.log(`Сейчас ход: ${this.gameState.currentPlayer}`);
   }
 
+  
+  // Логика для курсора  
+  cursorsLogic(positionedCharacter) {
+    if (positionedCharacter) {
+      const character = positionedCharacter.character; // Получаем самого персонажа  
+
+      if (this.teamPlayer.includes(character.type)) {
+        this.gamePlay.setCursor(cursors.pointer); // Указатель для своего персонажа  
+      } else if (this.selectedPlayerCharacter) {
+        if (this.teamCmp.includes(character.type)) {
+          // Если персонаж врага, показываем курсор перекрестия  
+          this.gamePlay.setCursor(cursors.crosshair);
+        }
+      }
+    } else {
+      // Если на ячейке нет персонажа, указатель остается как есть  
+      this.gamePlay.setCursor(cursors.auto);
+    }
+  }
+
   // перемещение
   makeMove(move) {
     // Проверка возможности хода  
@@ -410,7 +417,7 @@ export default class GameController {
           const attacker = unit.character; // атакующий персонаж
           const target = attack.target.character; // атакованный персонаж 
           const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
-          target.health -= damage; // проверить, достаточно target или нужна attack.target 
+          target.health -= damage; 
           await this.gamePlay.showDamage(attack.target.position, damage); // показать анимацию с промисом   
           this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
         }
