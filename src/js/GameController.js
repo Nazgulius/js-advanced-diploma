@@ -566,7 +566,7 @@ export default class GameController {
               const targetIndex = targetPosition.y * this.gamePlay.boardSize + targetPosition.x;  
           
               // Проверяем, чтобы позиция была действительной в пределах игрового поля  
-              if (this.validatePosition(targetPosition) && this.calculationAvailableMoves(unit.position, speedCell, targetIndex)) {  
+              if (this.validatePosition(targetPosition) && this.calculationAvailableMoves(unit.position, speedCell, targetIndex) && !this.isCellOccupied(targetIndex)) {  
                   console.log(`${unit.character.type} делает ход к противнику`);  
                   this.makeMove({  
                       from: unit.position,  
@@ -575,7 +575,7 @@ export default class GameController {
               } else {  
                   // Если не можем двигаться в целевую позицию, вычисляем альтернативу  
                   const alternativeIndex = this.findAlternativePosition(unit.position, closestUnitPlayer.position, speedCell);  
-                  if (alternativeIndex !== null) {  
+                  if (alternativeIndex !== null && !this.isCellOccupied(targetIndex)) {  
                       console.log(`${unit.character.type} движется к ближайшему доступному полю`);  
                       this.makeMove({  
                           from: unit.position,  
@@ -602,7 +602,7 @@ export default class GameController {
                   const targetIndex = targetPosition.y * this.gamePlay.boardSize + targetPosition.x;  
           
                   // Проверяем, можно ли переместиться  
-                  if (this.validatePosition(targetPosition) && this.calculationAvailableMoves(unit.position, 1, targetIndex)) {  
+                  if (this.validatePosition(targetPosition) && this.calculationAvailableMoves(unit.position, 1, targetIndex) && !this.isCellOccupied(targetIndex)) {  
                       console.log(`${unit.character.type} делает шаг к противнику`);  
                       this.makeMove({  
                           from: unit.position,  
