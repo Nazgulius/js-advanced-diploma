@@ -213,7 +213,9 @@ export default class GamePlay {
       cell.appendChild(damageEl);
 
       damageEl.addEventListener('animationend', () => {
-        cell.removeChild(damageEl);
+        if (cell.contains(damageEl)) { // Проверка наличия элемента 
+          cell.removeChild(damageEl);
+        }
         resolve();
       });
     });
