@@ -141,16 +141,17 @@ export default class GameController {
     // });
 
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
-
+    const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
+    
     if (this.selectedPlayerCharacter) {
       this.gamePlay.selectCell(this.selectedCharacterPosition, 'yellow');
     }
-
+    
     // Если уже есть выбранный персонаж  
     if (this.selectedPlayerCharacter) {
       const moveRange = this.selectedPlayerCharacter.speedCell;
       const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
-      const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
+      
       // Проверяем, является ли текущая ячейка допустимым перемещением  
       if (isValidMove && !positionedCharacter) {
         // Если перемещение допустимо и ячейка свободна, выполняем перемещение  
@@ -232,12 +233,13 @@ export default class GameController {
     // TODO: react to mouse enter
     // Ищем персонажа по индексу ячейки  
     const positionedCharacter = this.massUnits.find(unit => unit.position === index);
+    const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
 
     // Логика для выделения при наведении 
-    this.selectionLogic(positionedCharacter, index);
+    this.selectionLogic(positionedCharacter, index, distance);
 
     // Логика для курсора  
-    this.cursorsLogic(positionedCharacter);
+    this.cursorsLogic(positionedCharacter, distance);
 
     // Показываем информацию о ячейке  
     if (positionedCharacter) {
@@ -262,7 +264,6 @@ export default class GameController {
     // Сброс выделения, если мы не уходим с выделенной ячейки  
     if (this.selectedPlayerCharacter) {
       const isSelectedCharacterPosition = this.selectedCharacterPosition === index;
-      this.gamePlay.selectCell(this.selectedCharacterPosition, 'yellow'); // Желтое выделение  
       // Если уходим с ячейки, которая не выбрана  
       if (!isSelectedCharacterPosition) {
         // Дополнительно показываем выделение на выбранном персонаже  
@@ -359,7 +360,7 @@ export default class GameController {
   }
 
   // Логика для курсора  
-  cursorsLogic(positionedCharacter) {
+  cursorsLogic(positionedCharacter, distance) {
     if (positionedCharacter) {
       const character = positionedCharacter.character; // Получаем самого персонажа  
 
@@ -367,8 +368,11 @@ export default class GameController {
         this.gamePlay.setCursor(cursors.pointer); // Указатель для своего персонажа  
       } else if (this.selectedPlayerCharacter) {
         if (this.teamCmp.includes(character.type)) {
-          // Если персонаж врага, показываем курсор перекрестия  
-          this.gamePlay.setCursor(cursors.crosshair);
+          if (distance <= this.selectedPlayerCharacter.attackRange) {
+            this.gamePlay.setCursor(cursors.crosshair); // Если персонаж врага, показываем курсор перекрестия  
+          } else {
+            this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие  
+          }
         }
       }
     } else {
@@ -378,14 +382,11 @@ export default class GameController {
   }
   
   // Логика для выделения при наведении 
-  selectionLogic(positionedCharacter, index) {
+  selectionLogic(positionedCharacter, index, distance) {
     if (this.selectedPlayerCharacter) {
       const moveRange = this.selectedPlayerCharacter.speedCell;
       const attackRange = this.selectedPlayerCharacter.attackRange;
       const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
-
-      // Рассчитываем расстояние  
-      const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
 
       if (isValidMove) {
         this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки для перемещения  
@@ -429,6 +430,7 @@ export default class GameController {
           const attacker = unit.character; // атакующий персонаж
           const target = attack.target.character; // атакованный персонаж 
           const damage = Math.max(attacker.attack - target.defence, attacker.attack * 0.1);
+
           target.health -= damage;
           await this.gamePlay.showDamage(attack.target.position, damage); // показать анимацию с промисом   
           this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
