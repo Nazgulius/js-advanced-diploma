@@ -24,5 +24,11 @@ export default class Character {
     this.health = 50;
     this.type = type;
     // TODO: выбросите исключение, если кто-то использует "new Character()"
+
+    // логика повышения уровня при создании персонажа (new)
+    if (level > 1) {
+      this.attack = Math.max(this.attack, this.attack * (80 + this.health) / 100);
+      this.defence = Math.max(this.defence, this.defence * (80 + this.health) / 100);
+    }
   }
 }

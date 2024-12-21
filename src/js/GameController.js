@@ -22,6 +22,8 @@ export default class GameController {
     this.selectedPlayerCharacter = null; // Храним информацию о выбранном персонаже игрока  
     this.selectedCharacterPosition = null; // Храним информацию о позиции выбранного персонажа игрока  
     this.gameState = new GameState();
+    this.countTeamPlayer = 1;
+    this.countTeamCmp = 1;
   }
 
   init() {
@@ -32,12 +34,6 @@ export default class GameController {
     document.addEventListener('DOMContentLoaded', () => {
       this.gamePlay.drawUi(themes.prairie);
 
-      // нужно найти зависимость от ЛВЛ для смены карт
-      if (false) {
-        for (const item in themes) {
-          console.log(themes[item]);
-        }
-      }
 
       /*
       const playerGenerator = characterGenerator([Bowman, Swordsman, Magician], 2); // тип и макс уровень
@@ -55,22 +51,20 @@ export default class GameController {
         //this.gamePlay.redrawPositions(massUnits);
       });*/
 
-      const countTeamPlayer = 3;
-      const countTeamCmp = 3;
       // генерация команды
-      const team2 = generateTeam([Bowman, Swordsman, Magician], 3, countTeamPlayer); // массив из 3 случайных персонажей playerTypes с уровнем 1, 2 или 3
-      const team3 = generateTeam([Daemon, Undead, Vampire], 3, countTeamCmp); // массив из 3 случайных персонажей playerTypes с уровнем 1, 2 или 3
+      const teamPlayer = generateTeam([Bowman, Swordsman, Magician], 3, this.countTeamPlayer); // массив из случайных персонажей playerTypes с уровнем 1, 2 или 3
+      const teamCmp = generateTeam([Daemon, Undead, Vampire], 3, this.countTeamCmp); // массив из случайных персонажей playerTypes с уровнем 1, 2 или 3
 
       // геренируем команду игрока
-      const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, countTeamPlayer);
+      const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, this.countTeamPlayer);
       randomPointsLeft.forEach((point, index) => {
-        this.massUnits.push(new PositionedCharacter(team2.getCharacters()[index], point));
+        this.massUnits.push(new PositionedCharacter(teamPlayer.getCharacters()[index], point));
       });
 
       // геренируем команду противника
-      const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, countTeamCmp);
+      const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, this.countTeamCmp);
       randomPointsRight.forEach((point, index) => {
-        this.massUnits.push(new PositionedCharacter(team3.getCharacters()[index], point));
+        this.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point));
       });
 
       this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
@@ -435,6 +429,7 @@ export default class GameController {
           await this.gamePlay.showDamage(attack.target.position, damage); // показать анимацию с промисом   
           this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
           this.logicDeath();
+          this.noUnits();
         }
       }
     } else {
@@ -674,29 +669,89 @@ export default class GameController {
 
   // если у противника не осталось персонажей
   noUnits() {
+    let unitCmpLive = null;
+    let unitPlayerLive = null;
     for (let unit of this.massUnits) {
-      if (this.teamPlayer.includes(unit.character.type)) {
-        GamePlay.showError('Игрок 1 проиграл');
+      if (this.teamCmp.includes(unit.character.type)) {
+        unitCmpLive += 1;
       } else {
-        this.levelUpTeam();
-        this.levelUpGame();
+        unitPlayerLive += 1;
       }
+    }
+
+    if (unitCmpLive === null) {
+      this.levelUpTeam();
+      this.levelUpGame();
+      this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
+    } else if (unitPlayerLive === null) {
+      GamePlay.showError('Игрок 1 проиграл');
     }
   }
 
   // повышаем упровень персоназей в команды
   levelUpTeam() {
+    for (let unit of this.massUnits) {
+      let life = unit.character.health;
+      
+      const attackBefore = unit.character.attack;
+      unit.character.attack = Math.max(attackBefore, attackBefore * (80 + life) / 100);
+  
+      const defenceBefore = unit.character.defence;
+      unit.character.defence = Math.max(defenceBefore, defenceBefore * (80 + life) / 100);
 
-
-  }
-
-  // повышаем левел юнита
-  levelUpUnit() {
-
+      if (life < 20) {
+        unit.character.health += 80;
+      } else {
+        unit.character.health = 100;
+      }
+    }
   }
 
   // повышаем левел игры
   levelUpGame() {
+    // расставляем имеющихся юнитов на места
+    // добавляем необходимых юнитов
+    let levelGame = 0;
+    levelGame++;
+    if (levelGame > 3) {
+      levelGame = 0;
+    }
+    
+    if (levelGame === 0) {
+      this.gamePlay.drawUi(themes.prairie);
+    } else if (levelGame === 1) {
+      this.gamePlay.drawUi(themes.desert);
+    } else if (levelGame === 2) {
+      this.gamePlay.drawUi(themes.arctic);
+    } else if (levelGame === 3) {
+      this.gamePlay.drawUi(themes.mountain);
+    }
 
+    this.countTeamPlayer += 1;
+
+    // размещаем команду игрока команду игрока
+    const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, this.countTeamPlayer);
+    randomPointsLeft.forEach((point, index) => {
+      if (this.massUnits.count > index) {
+        this.massUnits[index].position = point;
+      } else {
+        const playerGenerator = characterGenerator([Bowman, Swordsman, Magician], 2); // тип и макс уровень
+        this.massUnits.push(new PositionedCharacter(playerGenerator.next().value, point));
+      }
+    });
+
+    // геренируем и размещаем команду противника
+    this.countTeamCmp += 1;
+    let levelTeamCmp = 1;
+    levelTeamCmp++;
+
+    const teamCmp = generateTeam([Daemon, Undead, Vampire], levelTeamCmp, this.countTeamCmp); // тип, макс уровень, количество
+    const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, teamCmp);
+    randomPointsRight.forEach((point, index) => {
+      this.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point));
+    });
+
+    this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
   }
+
 }
