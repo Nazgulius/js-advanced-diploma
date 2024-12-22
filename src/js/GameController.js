@@ -539,7 +539,6 @@ export default class GameController {
 
 
 
-          console.log(`minDistance ${minDistance}`);
           // 2 вариант
           if (closestUnitPlayer) {
             console.log(`Ближайший персонаж Игрока 1 для ${unit.character.type}: ${closestUnitPlayer.character.type} на расстоянии ${minDistance}`);
@@ -707,10 +706,8 @@ export default class GameController {
     }
   }
 
-  // повышаем левел игры
+  // повышаем левел игры, меняем карту, повышаем лвл юнитов, расставляем на места
   levelUpGame() {
-    // расставляем имеющихся юнитов на места
-    // добавляем необходимых юнитов
     let levelGame = 0;
     levelGame++;
     if (levelGame > 3) {
@@ -727,16 +724,18 @@ export default class GameController {
       this.gamePlay.drawUi(themes.mountain);
     }
 
-    this.countTeamPlayer += 1;
-
     // размещаем команду игрока команду игрока
+    this.countTeamPlayer += 1;
+    let levelTeamPlayer = 1;
+    levelTeamPlayer++;
+
     const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, this.countTeamPlayer);
     randomPointsLeft.forEach((point, index) => {
-      if (this.massUnits.count > index) {
+      if (index < this.massUnits.length) {
         this.massUnits[index].position = point;
       } else {
-        const playerGenerator = characterGenerator([Bowman, Swordsman, Magician], 2); // тип и макс уровень
-        this.massUnits.push(new PositionedCharacter(playerGenerator.next().value, point));
+        const playerGenerator = characterGenerator([Bowman, Swordsman, Magician], levelTeamPlayer); // тип и макс уровень
+        this.massUnits.push(new PositionedCharacter(playerGenerator.next().value, point)); // размер стола, количество
       }
     });
 
@@ -746,9 +745,9 @@ export default class GameController {
     levelTeamCmp++;
 
     const teamCmp = generateTeam([Daemon, Undead, Vampire], levelTeamCmp, this.countTeamCmp); // тип, макс уровень, количество
-    const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, teamCmp);
+    const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, this.countTeamCmp); // размер стола, количество
     randomPointsRight.forEach((point, index) => {
-      this.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point));
+      this.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point)); 
     });
 
     this.gamePlay.redrawPositions(this.massUnits); // выводим на поле

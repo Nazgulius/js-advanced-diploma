@@ -27,8 +27,10 @@ export default class Character {
 
     // логика повышения уровня при создании персонажа (new)
     if (level > 1) {
-      this.attack = Math.max(this.attack, this.attack * (80 + this.health) / 100);
-      this.defence = Math.max(this.defence, this.defence * (80 + this.health) / 100);
+      for (let i = 1; i < level; i++) {
+        this.attack = Math.max(this.attack, this.attack * (80 + this.health) / 100);
+        this.defence = Math.max(this.defence, this.defence * (80 + this.health) / 100);
+      }
     }
   }
 }
