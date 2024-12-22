@@ -684,6 +684,7 @@ export default class GameController {
       this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
     } else if (unitPlayerLive === null) {
       GamePlay.showError('Игрок 1 проиграл');
+      this.endGame();
     }
   }
 
@@ -709,9 +710,14 @@ export default class GameController {
   // повышаем левел игры, меняем карту, повышаем лвл юнитов, расставляем на места
   levelUpGame() {
     let levelGame = 0;
-    levelGame++;
+
     if (levelGame > 3) {
       levelGame = 0;
+    } else {
+      levelGame++;
+      if (levelGame > 4) { 
+        this.endGame();
+      }
     }
     
     if (levelGame === 0) {
@@ -753,4 +759,8 @@ export default class GameController {
     this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
   }
 
+  // логика завершения игры
+  endGame() {
+
+  }
 }
