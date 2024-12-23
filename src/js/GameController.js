@@ -24,6 +24,7 @@ export default class GameController {
     this.gameState = new GameState();
     this.countTeamPlayer = 1;
     this.countTeamCmp = 1;
+    this.levelGame = 0;
   }
 
   init() {
@@ -259,6 +260,10 @@ export default class GameController {
   }
 
   onNewGame() {
+    this.countTeamPlayer = 1;
+    this.countTeamCmp = 1;
+    this.levelGame = 0;
+    this.levetThemesRoll();
     this.generateNewGame();
   }
 
@@ -673,10 +678,13 @@ export default class GameController {
     }
 
     if (unitCmpLive === null) {
+      this.gameState.scoreGame += 100;
+      console.log('Счёт игры: ' + this.gameState.scoreGame + ' очков!');
       this.levelUpTeam();
       this.levelUpGame();
       this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
     } else if (unitPlayerLive === null) {
+      console.log('Счёт игры: ' + this.gameState.scoreGame + ' очков!');
       GamePlay.showError('Игрок 1 проиграл');
       this.endGame();
     }
@@ -703,7 +711,6 @@ export default class GameController {
 
   // повышаем левел игры, меняем карту, повышаем лвл юнитов, расставляем на места
   levelUpGame() {
-    let levelGame = 0;
 
     // if (levelGame > 3) {
     //   levelGame = 0;
@@ -714,27 +721,14 @@ export default class GameController {
     //   }
     // }
 
-    levelGame = (levelGame + 1) % 5;  // Увеличиваем уровень и сбрасываем при необходимости 
-
+    this.levelGame = (this.levelGame + 1) % 5;  // Увеличиваем уровень и сбрасываем при необходимости 
+    
     // Проверяем, завершилась ли игра
-    if (levelGame === 0) {
+    if (this.levelGame === 0) {
       this.endGame();
     } else {
-      // Выбор темы в зависимости от уровня 
-      switch (levelGame) {
-        case 1:
-          this.gamePlay.drawUi(themes.desert);
-          break;
-        case 2:
-          this.gamePlay.drawUi(themes.arctic);
-          break;
-        case 3:
-          this.gamePlay.drawUi(themes.mountain);
-          break;
-        case 0:
-          this.gamePlay.drawUi(themes.prairie);
-          break;
-      }
+      // Выбор темы в зависимости от уровня
+      this.levetThemesRoll();
     }
 
     // размещаем команду игрока команду игрока
@@ -766,22 +760,41 @@ export default class GameController {
     this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
   }
 
+  // Выбор темы в зависимости от уровня 
+  levetThemesRoll() {
+    switch (this.levelGame) {
+      case 1:
+        this.gamePlay.drawUi(themes.desert);
+        break;
+      case 2:
+        this.gamePlay.drawUi(themes.arctic);
+        break;
+      case 3:
+        this.gamePlay.drawUi(themes.mountain);
+        break;
+      case 0:
+        this.gamePlay.drawUi(themes.prairie);
+        break;
+    }
+  }
+
   // логика завершения игры
   endGame() {
     this.renderOverlay();
+    console.log('Итоговый счёт игры: ' + this.gameState.scoreGame + ' очков!');
   }
 
   renderOverlay() {
     const board = document.querySelector('[data-id="board"]'); // Находим игровой контейнер  
-    const overlay = document.createElement('div');  
+    const overlay = document.createElement('div');
     overlay.className = 'overlay'; // Добавляем стиль в CSS  
 
     // Устанавливаем стиль для overlay  
     overlay.style.position = 'absolute';
-    overlay.style.top = 0;  
-    overlay.style.left = 0;  
+    overlay.style.top = 0;
+    overlay.style.left = 0;
     overlay.style.width = '100%';
-    overlay.style.height = '100%'; 
+    overlay.style.height = '100%';
     overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'; // Полупрозрачный черный  
 
     board.style.position = 'relative'; // Устанавливаем родителю относительное позиционирование  
@@ -791,8 +804,8 @@ export default class GameController {
   removeOverlay() {
     const board = document.querySelector('[data-id="board"]'); // Находим игровой контейнер  
     const overlay = board.querySelector('.overlay'); // Находим overlay в игровом контейнере  
-    if (overlay) {  
-        board.removeChild(overlay); // Удаляем слой затемнения  
-    }  
+    if (overlay) {
+      board.removeChild(overlay); // Удаляем слой затемнения  
+    }
   }
 }

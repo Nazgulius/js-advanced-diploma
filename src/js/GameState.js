@@ -4,6 +4,7 @@ export default class GameState {
   constructor() {
     //this.board = Array(64).fill(null); // Игровое поле (состояние)  
     this.currentPlayer = 'Игрок 1'; // Игрок 'Игрок 1' начинает первым  
+    this.scoreGame = 0;
   }
   static from(object) {
     // TODO: create object
