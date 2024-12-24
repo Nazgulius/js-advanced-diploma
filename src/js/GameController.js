@@ -22,11 +22,11 @@ export default class GameController {
     this.selectedPlayerCharacter = null; // Храним информацию о выбранном персонаже игрока  
     this.selectedCharacterPosition = null; // Храним информацию о позиции выбранного персонажа игрока  
     this.gameState = new GameState();
+    this.gameStateService = new GameStateService(localStorage);
     this.countTeamPlayer = this.gameState.countTeamPlayer;
     this.countTeamCmp = this.gameState.countTeamCmp;
     this.levelGame = this.gameState.levelGame;
     this.currentPlayer = this.gameState.currentPlayer;
-    this.gameStateService = new GameStateService(localStorage);
     this.massUnits = this.gameState.massUnits;
     this.scoreGame = this.gameState.scoreGame;
   }
@@ -34,7 +34,6 @@ export default class GameController {
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
-    // const img = document.getElementById('game-container');
 
     document.addEventListener('DOMContentLoaded', () => {
       this.levetThemesRoll();
@@ -509,86 +508,6 @@ export default class GameController {
               }
             }
           }
-
-          // 1 вариант
-          // Если ближайший персонаж найден  
-          // if (closestUnitPlayer) {
-          //   console.log(`Ближайший персонаж Игрока 1 для ${unit.character.type}: ${closestUnitPlayer.character.type} на расстоянии ${minDistance}`);
-
-          //   // Расстояние, на которое может двигаться персонаж  
-          //   const speedCell = unit.character.speedCell;
-          //   const attackRange = unit.character.attackRange;
-
-          //   // Если противник слишком близко, атаковать  
-          //   if (minDistance <= attackRange) {
-          //     this.makeAttack({
-          //       from: unit.position,  // Начальная позиция  
-          //       to: closestUnitPlayer.position,    // Конечная позиция   
-          //       target: closestUnitPlayer // Цель атаки  
-          //     });
-          //   } else if (minDistance <= speedCell) {
-          //     // } else if (true) {
-          //     // Перемещаемся на шаг к противнику, но остаемся за одну клетку до него  
-          //     //const directionToPlayer = this.calculateDirection(unit.position, closestUnitPlayer.position, this.gamePlay.boardSize);
-
-          //     // Получаем направление к противнику  
-          //     const directionToPlayer = this.calculateDirection(unit.position, closestUnitPlayer.position, this.gamePlay.boardSize);
-
-          //     // Вычисляем расстояние до противника  
-          //     const distanceToPlayer = minDistance; // уже полученное значение минимального расстояния  
-
-          //     // Фактическое количество клеток для движения  
-          //     const moveDistance = Math.min(speedCell, distanceToPlayer - 1); // Уменьшаем перемещение на 1 клетку  
-
-
-          //     const targetPosition = {
-          //       x: (unit.position % this.gamePlay.boardSize) + directionToPlayer.x * moveDistance,
-          //       y: Math.floor(unit.position / this.gamePlay.boardSize) + directionToPlayer.y * moveDistance
-          //     };
-          //     // const targetPosition = {
-          //     //   x: closestUnitPlayer.position % this.gamePlay.boardSize - directionToPlayer.x,
-          //     //   y: Math.floor(closestUnitPlayer.position / this.gamePlay.boardSize) - directionToPlayer.y
-          //     // };
-
-          //     // Преобразуем targetPosition в единый индекс  
-          //     const targetIndex = targetPosition.y * this.gamePlay.boardSize + targetPosition.x;
-
-
-          //     console.log('targetIndex');
-          //     console.log(targetIndex);
-          //     // Проверяем, чтобы позиция была действительной в пределах игрового поля и не была занята  
-          //     if (this.validatePosition(targetPosition) && !this.isCellOccupied(targetIndex)) {
-          //       console.log(`${unit.character.type} делает ход`);
-          //       this.makeMove({
-          //         from: unit.position,  // Начальная позиция  
-          //         to: targetIndex // Конечная позиция   
-          //       });
-          //     }
-          //   } else {
-          //     // Если противник вне диапазона движения, перемещаемся на максимально возможное расстояние в сторону противника  
-          //     const directionToPlayer = this.calculateDirection(unit.position, closestUnitPlayer.position, this.gamePlay.boardSize);
-          //     const targetPosition = {
-          //       x: (unit.position % this.gamePlay.boardSize) + directionToPlayer.x * speedCell,
-          //       y: Math.floor(unit.position / this.gamePlay.boardSize) + directionToPlayer.y * speedCell
-          //     };
-
-          //     // Преобразуем targetPosition в единый индекс  
-          //     const targetIndex = targetPosition.y * this.gamePlay.boardSize + targetPosition.x;
-
-          //     // Проверяем, чтобы позиция была действительной в пределах игрового поля  
-          //     if (this.validatePosition(targetPosition) && !this.isCellOccupied(targetIndex)) {
-          //       console.log(`${unit.character.type} делает ход 2`);
-          //       this.makeMove({
-          //         from: unit.position,  // Начальная позиция  
-          //         to: targetIndex // Конечная позиция   
-          //       });
-          //     }
-          //   }
-          // } else {
-          //   console.log('Нет доступных врагов для атаки.');
-          // }
-
-
 
           // 2 вариант
           if (closestUnitPlayer) {
