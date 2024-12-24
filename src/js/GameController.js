@@ -10,21 +10,23 @@ import GamePlay from './GamePlay.js';
 import { characterGenerator, generateTeam } from './generators.js';
 import cursors from './cursors.js';
 import GameState from './GameState.js';
+import GameStateService from './GameStateService.js';
 
 
 export default class GameController {
   constructor(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.massUnits = [];
     this.teamPlayer = ['bowman', 'magician', 'swordsman'];
     this.teamCmp = ['daemon', 'undead', 'vampire'];
     this.selectedPlayerCharacter = null; // Храним информацию о выбранном персонаже игрока  
     this.selectedCharacterPosition = null; // Храним информацию о позиции выбранного персонажа игрока  
     this.gameState = new GameState();
-    this.countTeamPlayer = 1;
-    this.countTeamCmp = 1;
-    this.levelGame = 0;
+    this.countTeamPlayer = this.gameState.countTeamPlayer;
+    this.countTeamCmp = this.gameState.countTeamCmp;
+    this.levelGame = this.gameState.levelGame;
+    this.currentPlayer = this.gameState.currentPlayer;
+    this.gameStateService = new GameStateService();
   }
 
   init() {
@@ -33,8 +35,7 @@ export default class GameController {
     // const img = document.getElementById('game-container');
 
     document.addEventListener('DOMContentLoaded', () => {
-      this.gamePlay.drawUi(themes.prairie);
-
+      this.levetThemesRoll();
       this.generateNewGame();
     });
 
@@ -44,7 +45,7 @@ export default class GameController {
   generateNewGame() {
     this.removeOverlay();
 
-    this.massUnits.length = 0;
+    this.gameState.massUnits.length = 0;
 
     // генерация команды
     const teamPlayer = generateTeam([Bowman, Swordsman, Magician], 1, this.countTeamPlayer); // массив из случайных персонажей по типу, уровень, количество 
@@ -53,16 +54,16 @@ export default class GameController {
     // геренируем команду игрока
     const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, this.countTeamPlayer);
     randomPointsLeft.forEach((point, index) => {
-      this.massUnits.push(new PositionedCharacter(teamPlayer.getCharacters()[index], point));
+      this.gameState.massUnits.push(new PositionedCharacter(teamPlayer.getCharacters()[index], point));
     });
 
     // геренируем команду противника
     const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, this.countTeamCmp);
     randomPointsRight.forEach((point, index) => {
-      this.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point));
+      this.gameState.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point));
     });
 
-    this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
+    this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле
   }
 
   // рандомим команду игрока
@@ -116,16 +117,36 @@ export default class GameController {
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
     this.gamePlay.addNewGameListener(this.onNewGame.bind(this));
+    this.gamePlay.addSaveGameListener(this.onSaveGame.bind(this));
+    this.gamePlay.addLoadGameListener(this.onLoadGame.bind(this));
   }
 
+  onSaveGame() {
+    console.log('save')
+    this.gameStateService.save('testing text');
+
+    // GameStateService.save({
+    //   currentPlayer: this.currentPlayer,
+    //   scoreGame: this.scoreGame,
+    //   massUnits: this.massUnits,
+    //   levelGame: this.levelGame,
+    //   countTeamPlayer: this.countTeamPlayer,
+    //   countTeamCmp: this.countTeamCmp,
+    // });
+  }
+
+  onLoadGame() {
+    console.log('save')
+    GameStateService.load();
+  }
 
   onCellClick(index) {
     // Сбрасываем выделение предыдущих персонажей  
-    // this.massUnits.forEach(unit => {
+    // this.gameState.massUnits.forEach(unit => {
     //   this.gamePlay.deselectCell(unit.position); // Снять выделение  
     // });
 
-    const positionedCharacter = this.massUnits.find(unit => unit.position === index);
+    const positionedCharacter = this.gameState.massUnits.find(unit => unit.position === index);
     const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
 
     if (this.selectedPlayerCharacter) {
@@ -134,11 +155,11 @@ export default class GameController {
 
     // Если уже есть выбранный персонаж  
     if (this.selectedPlayerCharacter) {
-      const moveRange = this.selectedPlayerCharacter.speedCell;
-      const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
+      //const moveRange = this.selectedPlayerCharacter.speedCell;
+      //const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, this.selectedPlayerCharacter.speedCell, index);
 
       // Проверяем, является ли текущая ячейка допустимым перемещением  
-      if (isValidMove && !positionedCharacter) {
+      if (this.isValidMove(index) && !positionedCharacter) {
         // Если перемещение допустимо и ячейка свободна, выполняем перемещение  
         this.makeMove({
           from: this.selectedCharacterPosition,  // Начальная позиция  
@@ -176,10 +197,10 @@ export default class GameController {
       // Если кликнули на своего персонажа или пустую ячейку  
       else {
         // Сбрасываем выделение предыдущих персонажей  
-        this.massUnits.forEach(unit => {
+        this.gameState.massUnits.forEach(unit => {
           this.gamePlay.deselectCell(unit.position); // Снять выделение  
         });
-        this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
+        this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле 
 
         // Тут ничего больше не делаем, просто сбрасываем выделение  
         if (positionedCharacter) {
@@ -199,7 +220,7 @@ export default class GameController {
     else if (positionedCharacter) {
       if (this.teamPlayer.includes(positionedCharacter.character.type)) {
         // Снять выделение со всех персонажей  
-        this.massUnits.forEach(unit => {
+        this.gameState.massUnits.forEach(unit => {
           this.gamePlay.deselectCell(unit.position); // Снять выделение с предыдущих ячеек  
         });
 
@@ -217,7 +238,7 @@ export default class GameController {
   onCellEnter(index) {
     // TODO: react to mouse enter
     // Ищем персонажа по индексу ячейки  
-    const positionedCharacter = this.massUnits.find(unit => unit.position === index);
+    const positionedCharacter = this.gameState.massUnits.find(unit => unit.position === index);
     const distance = this.calculateDistance(this.selectedCharacterPosition, index, this.gamePlay.boardSize);
 
     // Логика для выделения при наведении 
@@ -346,10 +367,21 @@ export default class GameController {
     );
   }
 
+  // проверяем возможность хода
+  isValidMove(index) {
+
+    return this.calculationAvailableMoves(this.selectedCharacterPosition, this.selectedPlayerCharacter.speedCell, index);
+  }
+
+  // проверяем возможность атаки
+  isValidAttack(attack) {
+    return true; // временная загрушка
+  }
+
   // Смена игрока после успешного хода
   switchPlayer() {
-    this.gameState.currentPlayer = (this.gameState.currentPlayer === 'Игрок 1') ? 'Игрок 2' : 'Игрок 1';
-    console.log(`Сейчас ход: ${this.gameState.currentPlayer}`);
+    this.currentPlayer = (this.currentPlayer === 'Игрок 1') ? 'Игрок 2' : 'Игрок 1';
+    console.log(`Сейчас ход: ${this.currentPlayer}`);
   }
 
   // Логика для курсора  
@@ -377,11 +409,11 @@ export default class GameController {
   // Логика для выделения при наведении 
   selectionLogic(positionedCharacter, index, distance) {
     if (this.selectedPlayerCharacter) {
-      const moveRange = this.selectedPlayerCharacter.speedCell;
+      //const moveRange = this.selectedPlayerCharacter.speedCell;
       const attackRange = this.selectedPlayerCharacter.attackRange;
-      const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
+      //const isValidMove = this.calculationAvailableMoves(this.selectedCharacterPosition, moveRange, index);
 
-      if (isValidMove) {
+      if (this.isValidMove(index)) {
         this.gamePlay.selectCell(index, 'green'); // Подсветка ячейки для перемещения  
       } else {
         this.gamePlay.setCursor(cursors.notallowed); // Недоступное действие  
@@ -399,12 +431,22 @@ export default class GameController {
   // перемещение
   makeMove(move) {
     // Проверка возможности хода  
-    if (this.gameState.isValidMove(move)) {
-      // Обновление состояния игры 
-      for (let unit of this.massUnits) {
+    if (this.selectedPlayerCharacter) {
+      if (this.isValidMove(move.to)) {
+        // Обновление состояния игры для игрока
+        for (let unit of this.gameState.massUnits) {
+          if (unit.position === move.from) {
+            unit.position = move.to;
+            this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле
+          }
+        }
+      }
+    } else if (!this.selectedPlayerCharacter) {
+      // Обновление состояния игры для компьютера
+      for (let unit of this.gameState.massUnits) {
         if (unit.position === move.from) {
           unit.position = move.to;
-          this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
+          this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле
         }
       }
     } else {
@@ -415,10 +457,10 @@ export default class GameController {
   // атака
   async makeAttack(attack) {
     // Проверка возможности хода  
-    if (this.gameState.isValidMove(attack)) { // возможно переделать на валидность атаки, а не мува. Или сделать общую валидность, типо make, действия 
+    if (this.isValidAttack(attack)) { 
 
       // Обновление состояния игры 
-      for (let unit of this.massUnits) {
+      for (let unit of this.gameState.massUnits) {
         if (unit.position === attack.from) {
           const attacker = unit.character; // атакующий персонаж
           const target = attack.target.character; // атакованный персонаж 
@@ -426,7 +468,7 @@ export default class GameController {
 
           target.health -= damage;
           await this.gamePlay.showDamage(attack.target.position, damage); // показать анимацию с промисом   
-          this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
+          this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле 
           this.logicDeath();
           this.noUnits();
         }
@@ -439,14 +481,14 @@ export default class GameController {
   // действия CMP, Игрок 2
   makeCmpLogic() {
     // ход Игрока 2 (CMP)
-    if (this.gameState.currentPlayer === 'Игрок 2') {
-      for (let unit of this.massUnits) {
+    if (this.currentPlayer === 'Игрок 2') {
+      for (let unit of this.gameState.massUnits) {
         if (this.teamCmp.includes(unit.character.type)) { // совпадение для персонажа CMP
           let closestUnitPlayer = null; // Для хранения ближайшего персонажа игрока 1  
           let minDistance = Infinity; // Начальное значение для минимального расстояния  
 
           // Поиск ближайшего персонажа игрока 1  
-          for (let unitPlayer of this.massUnits) {
+          for (let unitPlayer of this.gameState.massUnits) {
             if (this.teamPlayer.includes(unitPlayer.character.type)) { // совпадение для персонажа Игрока 1
               const distance = this.calculateDistance(unit.position, unitPlayer.position, this.gamePlay.boardSize);
 
@@ -615,7 +657,7 @@ export default class GameController {
 
   // Проверка на занятость клетки
   isCellOccupied(index) {
-    for (let unit of this.massUnits) {
+    for (let unit of this.gameState.massUnits) {
       if (unit.position === index) {
         return true; // Ячейка занята  
       }
@@ -657,32 +699,33 @@ export default class GameController {
 
   // логика смерти персонажа
   logicDeath() {
-    for (let unitIndex in this.massUnits) {
-      if (this.massUnits[unitIndex].character.health <= 0) {
-        this.massUnits.splice(unitIndex, 1);
-        this.gamePlay.redrawPositions(this.massUnits); // выводим на поле 
+    for (let unitIndex in this.gameState.massUnits) {
+      if (this.gameState.massUnits[unitIndex].character.health <= 0) {
+        this.gameState.massUnits.splice(unitIndex, 1);
+        this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле 
       }
     }
   }
 
-  // если у противника не осталось персонажей
+  // если не осталось персонажей
   noUnits() {
     let unitCmpLive = null;
     let unitPlayerLive = null;
-    for (let unit of this.massUnits) {
-      if (this.teamCmp.includes(unit.character.type)) {
-        unitCmpLive += 1;
-      } else {
-        unitPlayerLive += 1;
-      }
-    }
-
+    
     if (unitCmpLive === null) {
+      for (let unit of this.gameState.massUnits) {
+        if (this.teamCmp.includes(unit.character.type)) {
+          unitCmpLive += 1;
+        } else {
+          unitPlayerLive += 1;
+        }
+      }
+
       this.gameState.scoreGame += 100;
       console.log('Счёт игры: ' + this.gameState.scoreGame + ' очков!');
       this.levelUpTeam();
       this.levelUpGame();
-      this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
+      this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле
     } else if (unitPlayerLive === null) {
       console.log('Счёт игры: ' + this.gameState.scoreGame + ' очков!');
       GamePlay.showError('Игрок 1 проиграл');
@@ -692,7 +735,7 @@ export default class GameController {
 
   // повышаем упровень персоназей в команды
   levelUpTeam() {
-    for (let unit of this.massUnits) {
+    for (let unit of this.gameState.massUnits) {
       let life = unit.character.health;
 
       const attackBefore = unit.character.attack;
@@ -738,11 +781,11 @@ export default class GameController {
 
     const randomPointsLeft = this.randomPositionPlayerLeft(this.gamePlay.boardSize, this.countTeamPlayer);
     randomPointsLeft.forEach((point, index) => {
-      if (index < this.massUnits.length) {
-        this.massUnits[index].position = point;
+      if (index < this.gameState.massUnits.length) {
+        this.gameState.massUnits[index].position = point;
       } else {
         const playerGenerator = characterGenerator([Bowman, Swordsman, Magician], levelTeamPlayer); // тип и макс уровень
-        this.massUnits.push(new PositionedCharacter(playerGenerator.next().value, point)); // размер стола, количество
+        this.gameState.massUnits.push(new PositionedCharacter(playerGenerator.next().value, point)); // размер стола, количество
       }
     });
 
@@ -754,10 +797,10 @@ export default class GameController {
     const teamCmp = generateTeam([Daemon, Undead, Vampire], levelTeamCmp, this.countTeamCmp); // тип, макс уровень, количество
     const randomPointsRight = this.randomPositionPlayerRight(this.gamePlay.boardSize, this.countTeamCmp); // размер стола, количество
     randomPointsRight.forEach((point, index) => {
-      this.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point));
+      this.gameState.massUnits.push(new PositionedCharacter(teamCmp.getCharacters()[index], point));
     });
 
-    this.gamePlay.redrawPositions(this.massUnits); // выводим на поле
+    this.gamePlay.redrawPositions(this.gameState.massUnits); // выводим на поле
   }
 
   // Выбор темы в зависимости от уровня 
@@ -808,4 +851,8 @@ export default class GameController {
       board.removeChild(overlay); // Удаляем слой затемнения  
     }
   }
+
+  
+
+  
 }
