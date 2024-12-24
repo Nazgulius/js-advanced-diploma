@@ -1,4 +1,4 @@
-dist
+*.md
 doc
 .idea
 

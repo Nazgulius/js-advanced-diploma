@@ -466,7 +466,7 @@ export default class GameController {
   // атака
   async makeAttack(attack) {
     // Проверка возможности хода  
-    if (this.isValidAttack(attack)) { 
+    if (this.isValidAttack(attack)) {
 
       // Обновление состояния игры 
       for (let unit of this.massUnits) {
@@ -640,7 +640,7 @@ export default class GameController {
   noUnits() {
     let unitCmpLive = null;
     let unitPlayerLive = null;
-    
+
     if (unitCmpLive === null) {
       for (let unit of this.massUnits) {
         if (this.teamCmp.includes(unit.character.type)) {
@@ -694,7 +694,7 @@ export default class GameController {
     // }
 
     this.levelGame = (this.levelGame + 1) % 5;  // Увеличиваем уровень и сбрасываем при необходимости 
-    
+
     // Проверяем, завершилась ли игра
     if (this.levelGame === 0) {
       this.endGame();
@@ -780,8 +780,4 @@ export default class GameController {
       board.removeChild(overlay); // Удаляем слой затемнения  
     }
   }
-
-  
-
-  
 }
