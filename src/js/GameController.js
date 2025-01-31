@@ -695,7 +695,7 @@ export default class GameController {
     //   }
     // }
 
-    this.levelGame = (this.levelGame + 1) % 5;  // Увеличиваем уровень и сбрасываем при необходимости 
+    this.levelGame = (this.levelGame + 1) % 5;  // Увеличиваем уровень и сбрасываем при необходимости
     
     // Проверяем, завершилась ли игра
     if (this.levelGame === 0) {
