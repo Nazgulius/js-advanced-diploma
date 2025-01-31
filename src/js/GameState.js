@@ -10,7 +10,8 @@ export default class GameState {
     this.countTeamCmp = 1; // количество юнитов противника
   }
 
-  static from(object) {
+  // былл from(object) {}
+  static from() {
     // TODO: create object
     const gameState = new GameState();
     //gameState.board = object.board;
