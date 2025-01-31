@@ -384,7 +384,9 @@ export default class GameController {
 
   // проверяем возможность атаки
   isValidAttack(attack) {
-    return true; // временная загрушка
+    if (attack) {
+       return true; // временная загрушка
+    }
   }
 
   // Смена игрока после успешного хода
