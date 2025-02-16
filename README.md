@@ -2,6 +2,7 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/85v8jmp1ecjmu20b?svg=true)](https://ci.appveyor.com/project/Nazgulius/js-advanced-diploma)
 
+gh-pages https://nazgulius.github.io/js-advanced-diploma/  
 
 ###### tags: `netology` `advanced js`
 
